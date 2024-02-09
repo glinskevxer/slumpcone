@@ -7,10 +7,12 @@ from slumpcone.materials.kinds import (
     ScmKind,
     WaterSource,
 )
+from slumpcone.materials.spec import Material
 
 __all__ = [
     "AdmixtureType",
     "CementType",
+    "Material",
     "MaterialClass",
     "ScmKind",
     "WaterSource",
