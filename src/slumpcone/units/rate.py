@@ -121,6 +121,17 @@ class MassPerVolume:
             raise ValidationError("division by zero", field="value")
         return MassPerVolume(self.value / divisor, self.mass_unit, self.volume_unit)
 
+    def ratio_to(self, other: MassPerVolume) -> float:
+        """This rate divided by another, as a plain number.
+
+        ``__truediv__`` has to answer both "scale this rate" and "compare two
+        rates", so its return type is a union and every caller has to narrow it.
+        Callers that only ever want the ratio use this instead.
+        """
+        if other.base_value == 0.0:
+            raise ValidationError("division by a zero rate", field="value")
+        return self.base_value / other.base_value
+
     def __neg__(self) -> MassPerVolume:
         return MassPerVolume(-self.value, self.mass_unit, self.volume_unit)
 

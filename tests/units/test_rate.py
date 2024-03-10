@@ -113,6 +113,15 @@ class CaseArithmetic:
         cement = MassPerVolume(564, "lb", "yd3")
         assert water / cement == pytest.approx(0.4504, abs=1e-4)
 
+    def test_ratio_to_answers_without_a_union(self) -> None:
+        water = MassPerVolume(254, "lb", "yd3")
+        cement = MassPerVolume(564, "lb", "yd3")
+        assert water.ratio_to(cement) == pytest.approx(0.4504, abs=1e-4)
+
+    def test_ratio_to_refuses_a_zero_divisor(self) -> None:
+        with pytest.raises(ValidationError):
+            MassPerVolume(1, "lb", "yd3").ratio_to(MassPerVolume(0, "lb", "yd3"))
+
     def test_division_by_zero_is_refused(self) -> None:
         with pytest.raises(ValidationError):
             MassPerVolume(1, "lb", "yd3") / 0
