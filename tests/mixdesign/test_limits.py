@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from slumpcone.materials.catalog import MaterialCatalog
-from slumpcone.materials.kinds import CementType, MaterialClass, ScmKind
-from slumpcone.materials.spec import Material
-from slumpcone.mixdesign.design import MixDesign
+from slumpcone.materials.kinds import CementType, MaterialClass
 from slumpcone.mixdesign.limits import (
     LimitFinding,
     check_air,
@@ -21,103 +18,7 @@ from slumpcone.mixdesign.proportions import Charge, Proportions
 from slumpcone.percent import Percent
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.units.quantity import Quantity
-from slumpcone.units.rate import MassPerVolume
-
-
-def rate(value: float) -> MassPerVolume:
-    return MassPerVolume(value, "lb", "yd3")
-
-
-def catalog(cement_type: CementType = CementType.TYPE_II) -> MaterialCatalog:
-    stock = MaterialCatalog()
-    stock.add_all(
-        [
-            Material(
-                "CEM-I",
-                "Portland",
-                MaterialClass.CEMENT,
-                cement_type=cement_type,
-                specific_gravity=3.15,
-            ),
-            Material(
-                "SCM-F",
-                "Class F ash",
-                MaterialClass.SCM,
-                scm_kind=ScmKind.FLY_ASH_F,
-                specific_gravity=2.35,
-            ),
-            Material(
-                "SCM-C",
-                "Class C ash",
-                MaterialClass.SCM,
-                scm_kind=ScmKind.FLY_ASH_C,
-                specific_gravity=2.60,
-            ),
-            Material(
-                "SCM-SL",
-                "Grade 120 slag",
-                MaterialClass.SCM,
-                scm_kind=ScmKind.SLAG_120,
-                specific_gravity=2.90,
-            ),
-            Material(
-                "CA-57",
-                "Number 57",
-                MaterialClass.COARSE_AGGREGATE,
-                specific_gravity=2.68,
-                absorption=Percent(0.7),
-                nominal_max_size=Quantity(1.0, "in"),
-            ),
-            Material(
-                "FA-1",
-                "Sand",
-                MaterialClass.FINE_AGGREGATE,
-                specific_gravity=2.63,
-                absorption=Percent(1.4),
-                fineness_modulus=2.84,
-            ),
-            Material("W-1", "Water", MaterialClass.WATER, water_source=None)
-            if False
-            else Material(
-                "W-1",
-                "Water",
-                MaterialClass.WATER,
-                water_source=__import__(
-                    "slumpcone.materials.kinds", fromlist=["WaterSource"]
-                ).WaterSource.POTABLE,
-            ),
-        ]
-    )
-    return stock
-
-
-def proportions(
-    *, water: float = 250.0, ash: float = 94.0, ash_code: str = "SCM-F", air: float = 6.0
-) -> Proportions:
-    return Proportions(
-        (
-            Charge("CEM-I", MaterialClass.CEMENT, rate(564 - ash)),
-            Charge(ash_code, MaterialClass.SCM, rate(ash)),
-            Charge("CA-57", MaterialClass.COARSE_AGGREGATE, rate(1780)),
-            Charge("FA-1", MaterialClass.FINE_AGGREGATE, rate(1255)),
-            Charge("W-1", MaterialClass.WATER, rate(water)),
-        ),
-        design_air=Percent(air),
-    )
-
-
-def design(**overrides: object) -> MixDesign:
-    fields: dict[str, object] = {
-        "code": "4000P-57",
-        "name": "Paving mix",
-        "proportions": proportions(),
-        "specified_strength": Quantity(4500, "psi"),
-        "nominal_max_size": Quantity(1.0, "in"),
-        "slump_target": Quantity(4.0, "in"),
-        "exposure": ExposureSet.parse("F2 S1"),
-    }
-    fields.update(overrides)
-    return MixDesign(**fields)  # type: ignore[arg-type]
+from tests.factories import catalog, design, proportions, rate
 
 
 class CaseFinding:
@@ -133,7 +34,7 @@ class CaseRatio:
         assert check_ratio(design()) == ()
 
     def test_above_the_limit_names_the_class(self) -> None:
-        findings = check_ratio(design(proportions=proportions(water=300.0)))
+        findings = check_ratio(design(proportions=proportions(water_content=300.0)))
         assert findings[0].code == "WCM_ABOVE_LIMIT"
         assert findings[0].governing == "F2"
 
@@ -177,7 +78,7 @@ class CaseReplacement:
         assert check_replacement(design(), catalog()) == ()
 
     def test_fly_ash_over_its_cap(self) -> None:
-        heavy = design(exposure=ExposureSet.parse("F3"), proportions=proportions(ash=200.0))
+        heavy = design(exposure=ExposureSet.parse("F3"), proportions=proportions(scm=200.0))
         findings = check_replacement(heavy, catalog())
         assert findings[0].code == "REPLACEMENT_ABOVE_CAP"
         assert "fly_ash" in findings[0].detail
@@ -185,7 +86,7 @@ class CaseReplacement:
     def test_slag_has_a_looser_cap(self) -> None:
         slag = design(
             exposure=ExposureSet.parse("F3"),
-            proportions=proportions(ash=200.0, ash_code="SCM-SL"),
+            proportions=proportions(scm=200.0, scm_code="SCM-SL"),
         )
         assert check_replacement(slag, catalog()) == ()
 
@@ -217,7 +118,7 @@ class CaseSulfate:
 
     def test_class_c_ash_in_a_sulfate_class(self) -> None:
         findings = check_sulfate_cement(
-            design(proportions=proportions(ash_code="SCM-C")), catalog()
+            design(proportions=proportions(scm_code="SCM-C")), catalog()
         )
         assert findings[0].code == "SCM_NOT_SULFATE_RESISTING"
 
@@ -252,7 +153,7 @@ class CaseWholeDesign:
     def test_several_rules_at_once(self) -> None:
         broken = design(
             specified_strength=Quantity(3000, "psi"),
-            proportions=proportions(water=320.0, air=3.0),
+            proportions=proportions(water_content=320.0, air=3.0),
         )
         codes = [f.code for f in check_design(broken, catalog())]
         assert "WCM_ABOVE_LIMIT" in codes
@@ -271,4 +172,4 @@ class CaseWholeDesign:
 
 @pytest.mark.parametrize("water", [200.0, 250.0])
 def test_a_lower_ratio_never_produces_a_finding(water: float) -> None:
-    assert check_ratio(design(proportions=proportions(water=water))) == ()
+    assert check_ratio(design(proportions=proportions(water_content=water))) == ()

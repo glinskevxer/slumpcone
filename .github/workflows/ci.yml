@@ -37,6 +37,18 @@ jobs:
       - name: mypy
         run: python -m mypy
 
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install
+        run: python -m pip install -e ".[dev]"
+      - name: every migration applies to an empty register
+        run: python -m slumpcone.tools.check_migrations
+
   test:
     runs-on: ubuntu-latest
     steps:

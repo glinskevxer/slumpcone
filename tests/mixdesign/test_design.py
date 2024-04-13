@@ -3,45 +3,11 @@ from __future__ import annotations
 import pytest
 
 from slumpcone.errors import ValidationError
-from slumpcone.materials.kinds import MaterialClass
-from slumpcone.mixdesign.design import COMMON_TEST_AGES, MixDesign, default_slump_band
-from slumpcone.mixdesign.proportions import Charge, Proportions
+from slumpcone.mixdesign.design import COMMON_TEST_AGES, default_slump_band
 from slumpcone.percent import Percent
-from slumpcone.spec.exposure import ExposureSet
 from slumpcone.tolerance import Band
 from slumpcone.units.quantity import Quantity
-from slumpcone.units.rate import MassPerVolume
-
-
-def rate(value: float) -> MassPerVolume:
-    return MassPerVolume(value, "lb", "yd3")
-
-
-def proportions(air: float = 6.0) -> Proportions:
-    return Proportions(
-        (
-            Charge("CEM-I", MaterialClass.CEMENT, rate(470)),
-            Charge("SCM-F", MaterialClass.SCM, rate(94)),
-            Charge("CA-57", MaterialClass.COARSE_AGGREGATE, rate(1780)),
-            Charge("FA-1", MaterialClass.FINE_AGGREGATE, rate(1255)),
-            Charge("W-1", MaterialClass.WATER, rate(254)),
-        ),
-        design_air=Percent(air),
-    )
-
-
-def design(**overrides: object) -> MixDesign:
-    fields: dict[str, object] = {
-        "code": "4000P-57",
-        "name": "4000 psi paving mix",
-        "proportions": proportions(),
-        "specified_strength": Quantity(4000, "psi"),
-        "nominal_max_size": Quantity(1.0, "in"),
-        "slump_target": Quantity(4.0, "in"),
-        "exposure": ExposureSet.parse("F2 S1"),
-    }
-    fields.update(overrides)
-    return MixDesign(**fields)  # type: ignore[arg-type]
+from tests.factories import design, proportions
 
 
 class CaseDefaultSlumpBand:
@@ -129,7 +95,7 @@ class CaseDerived:
         assert design().identity == "4000P-57 r1"
 
     def test_ratio_and_cementitious(self) -> None:
-        assert design().water_cementitious_ratio == pytest.approx(0.4504, abs=1e-4)
+        assert design().water_cementitious_ratio == pytest.approx(0.4433, abs=1e-4)
         assert design().cementitious == Quantity(564, "lb")
 
     def test_air_entrainment_flag(self) -> None:
@@ -142,8 +108,8 @@ class CaseDerived:
     def test_describe(self) -> None:
         line = design().describe()
         assert "4000P-57 r1" in line
-        assert "4000 psi at 28 d" in line
-        assert "w/cm 0.450" in line
+        assert "4500 psi at 28 d" in line
+        assert "w/cm 0.443" in line
         assert "F2 S1 W0 C0" in line
 
 

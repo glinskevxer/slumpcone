@@ -16,32 +16,14 @@ from slumpcone.mixdesign.volumes import (
 from slumpcone.percent import Percent
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.rate import MassPerVolume
+from tests.factories import gravities, proportions, rate
 
-GRAVITIES = {
-    "CEM-I": 3.15,
-    "SCM-F": 2.35,
-    "CA-57": 2.68,
-    "FA-1": 2.63,
-    "W-1": 1.0,
-}
-
-
-def rate(value: float) -> MassPerVolume:
-    return MassPerVolume(value, "lb", "yd3")
+GRAVITIES = gravities()
 
 
 def closing_mix() -> Proportions:
-    # Proportioned so the absolute volumes plus six percent air close on 27 ft3.
-    return Proportions(
-        (
-            Charge("CEM-I", MaterialClass.CEMENT, rate(470)),
-            Charge("SCM-F", MaterialClass.SCM, rate(94)),
-            Charge("CA-57", MaterialClass.COARSE_AGGREGATE, rate(1780)),
-            Charge("FA-1", MaterialClass.FINE_AGGREGATE, rate(1255)),
-            Charge("W-1", MaterialClass.WATER, rate(254)),
-        ),
-        design_air=Percent(6.0),
-    )
+    """The shared paving mix with no admixtures on it."""
+    return proportions(admixtures=())
 
 
 class CaseAbsoluteVolume:
@@ -74,7 +56,7 @@ class CaseComputeVolumes:
     def test_water_defaults_to_a_gravity_of_one(self) -> None:
         without_water = {k: v for k, v in GRAVITIES.items() if k != "W-1"}
         breakdown = compute_volumes(closing_mix(), without_water)
-        assert breakdown.volume_of("W-1").value == pytest.approx(254 / 62.42796, abs=1e-6)
+        assert breakdown.volume_of("W-1").value == pytest.approx(250 / 62.42796, abs=1e-6)
 
     def test_a_missing_gravity_on_a_solid_is_refused(self) -> None:
         without_stone = {k: v for k, v in GRAVITIES.items() if k != "CA-57"}
@@ -87,13 +69,13 @@ class CaseComputeVolumes:
 
     def test_totals(self) -> None:
         breakdown = compute_volumes(closing_mix(), GRAVITIES)
-        assert breakdown.total_mass.value == pytest.approx(3853.0)
-        assert breakdown.total_volume.value == pytest.approx(27.0, abs=0.05)
+        assert breakdown.total_mass.value == pytest.approx(3849.0)
+        assert breakdown.total_volume.value == pytest.approx(26.94, abs=0.02)
 
     def test_scaling_to_a_load(self) -> None:
         breakdown = compute_volumes(closing_mix(), GRAVITIES, Quantity(9, "yd3"))
-        assert breakdown.total_mass.value == pytest.approx(3853.0 * 9)
-        assert breakdown.total_volume.value == pytest.approx(243.0, abs=0.5)
+        assert breakdown.total_mass.value == pytest.approx(3849.0 * 9)
+        assert breakdown.total_volume.value == pytest.approx(242.4, abs=0.5)
 
     def test_volume_of_and_share_of(self) -> None:
         breakdown = compute_volumes(closing_mix(), GRAVITIES)
@@ -111,7 +93,7 @@ class CaseDensities:
 
     def test_theoretical_density_has_no_air_in_it(self) -> None:
         assert self.breakdown.theoretical_density.to("lb", "ft3").value == pytest.approx(
-            151.8, abs=0.5
+            152.0, abs=0.5
         )
 
     def test_design_density_is_lower(self) -> None:

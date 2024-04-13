@@ -3,17 +3,13 @@ from __future__ import annotations
 import pytest
 
 from slumpcone.errors import ConflictError, NotFoundError
-from slumpcone.materials.kinds import MaterialClass
-from slumpcone.mixdesign.design import MixDesign
-from slumpcone.mixdesign.proportions import AdmixtureCharge, Charge, Proportions
 from slumpcone.percent import Percent
-from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
 from slumpcone.store.migrations import migrate
 from slumpcone.store.mixdesign_repo import MixDesignRepository
 from slumpcone.tolerance import Band
 from slumpcone.units.quantity import Quantity
-from slumpcone.units.rate import MassPerVolume
+from tests.factories import design, proportions, rate
 
 
 @pytest.fixture()
@@ -23,45 +19,12 @@ def repo() -> MixDesignRepository:
     return MixDesignRepository(database)
 
 
-def rate(value: float) -> MassPerVolume:
-    return MassPerVolume(value, "lb", "yd3")
-
-
-def proportions(air: float = 6.0) -> Proportions:
-    return Proportions(
-        (
-            Charge("CEM-I", MaterialClass.CEMENT, rate(470)),
-            Charge("SCM-F", MaterialClass.SCM, rate(94)),
-            Charge("CA-57", MaterialClass.COARSE_AGGREGATE, rate(1780)),
-            Charge("FA-1", MaterialClass.FINE_AGGREGATE, rate(1255)),
-            Charge("W-1", MaterialClass.WATER, rate(250)),
-        ),
-        (AdmixtureCharge("AD-AE", Quantity(1.2, "floz")),),
-        Percent(air),
-    )
-
-
-def design(**overrides: object) -> MixDesign:
-    fields: dict[str, object] = {
-        "code": "4000P-57",
-        "name": "Paving mix",
-        "proportions": proportions(),
-        "specified_strength": Quantity(4500, "psi"),
-        "nominal_max_size": Quantity(1.0, "in"),
-        "slump_target": Quantity(4.0, "in"),
-        "exposure": ExposureSet.parse("F2 S1"),
-        "plant_code": "PL-1",
-    }
-    fields.update(overrides)
-    return MixDesign(**fields)  # type: ignore[arg-type]
-
-
 class CaseRoundTrip:
     def test_everything_comes_back(self, repo: MixDesignRepository) -> None:
         repo.save(design())
         loaded = repo.get("4000P-57", 1)
         assert loaded.code == "4000P-57"
-        assert loaded.name == "Paving mix"
+        assert loaded.name == "4000 psi paving mix"
         assert loaded.plant_code == "PL-1"
         assert loaded.specified_strength == Quantity(4500, "psi")
         assert loaded.test_age_days == 28
