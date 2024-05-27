@@ -61,5 +61,11 @@ class CaseTable:
         assert "lb" in mass
         assert "psi" not in mass
 
+    def test_the_force_row_was_added_for_the_testing_machine(self) -> None:
+        assert dimension_of("lbf") is Dimension.FORCE
+        assert dimension_of("kN") is Dimension.FORCE
+        assert resolve("kip").to_base == pytest.approx(1000 * resolve("lbf").to_base, rel=1e-12)
+        assert resolve("kips").symbol == "kip"
+
     def test_dimension_prints_its_own_name(self) -> None:
         assert str(Dimension.VOLUME) == "volume"

@@ -77,6 +77,11 @@ class UnitSystem(Enum):
         return "psi" if self is UnitSystem.CUSTOMARY else "MPa"
 
     @property
+    def force(self) -> str:
+        """The unit a testing machine reports its load in."""
+        return "lbf" if self is UnitSystem.CUSTOMARY else "kN"
+
+    @property
     def temperature(self) -> str:
         """The scale a concrete temperature prints on."""
         return "F" if self is UnitSystem.CUSTOMARY else "C"
@@ -88,6 +93,7 @@ class UnitSystem(Enum):
             Dimension.VOLUME: self.volume,
             Dimension.LENGTH: self.length,
             Dimension.PRESSURE: self.pressure,
+            Dimension.FORCE: self.force,
             Dimension.TIME: "min",
         }
         return table[dimension]

@@ -25,6 +25,7 @@ class Dimension(Enum):
     VOLUME = "volume"
     LENGTH = "length"
     PRESSURE = "pressure"
+    FORCE = "force"
     TIME = "time"
 
     def __str__(self) -> str:
@@ -64,6 +65,10 @@ _TABLE: tuple[UnitDef, ...] = (
     UnitDef("kPa", Dimension.PRESSURE, 1e3),
     UnitDef("MPa", Dimension.PRESSURE, 1e6),
     UnitDef("psi", Dimension.PRESSURE, 6894.757293168361),
+    UnitDef("N", Dimension.FORCE, 1.0),
+    UnitDef("kN", Dimension.FORCE, 1e3),
+    UnitDef("lbf", Dimension.FORCE, 4.4482216152605),
+    UnitDef("kip", Dimension.FORCE, 4448.2216152605),
     UnitDef("s", Dimension.TIME, 1.0),
     UnitDef("min", Dimension.TIME, 60.0),
     UnitDef("h", Dimension.TIME, 3600.0),
@@ -113,6 +118,11 @@ _ALIASES: dict[str, str] = {
     "hour": "h",
     "hours": "h",
     "hr": "h",
+    "lbsf": "lbf",
+    "poundforce": "lbf",
+    "kips": "kip",
+    "newton": "N",
+    "newtons": "N",
 }
 
 

@@ -37,6 +37,7 @@ class CaseCustomary:
         assert self.system.water_volume == "gal"
         assert self.system.length == "in"
         assert self.system.pressure == "psi"
+        assert self.system.force == "lbf"
         assert self.system.temperature == "F"
 
 
@@ -51,6 +52,7 @@ class CaseMetric:
         assert self.system.water_volume == "L"
         assert self.system.length == "mm"
         assert self.system.pressure == "MPa"
+        assert self.system.force == "kN"
         assert self.system.temperature == "C"
 
 
