@@ -16,6 +16,7 @@ from slumpcone.fresh.tests import FreshTest, FreshTestKind
 from slumpcone.identity import normalize_ticket_number
 from slumpcone.percent import Percent
 from slumpcone.store.db import Database
+from slumpcone.store.rows import day_range
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.rate import MassPerVolume
 from slumpcone.units.temperature import Temperature
@@ -115,7 +116,7 @@ class FreshTestRepository:
         rows = self._db.query(
             "SELECT * FROM fresh_test WHERE kind = ? AND taken_at >= ? AND taken_at < ? "
             "ORDER BY taken_at, id",
-            (kind.value, start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            (kind.value, *day_range(start, end)),
         )
         return tuple(_from_row(row) for row in rows)
 
@@ -124,7 +125,7 @@ class FreshTestRepository:
         rows = self._db.query(
             "SELECT * FROM fresh_test WHERE taken_at >= ? AND taken_at < ? "
             "ORDER BY taken_at, id",
-            (start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            day_range(start, end),
         )
         return tuple(_from_row(row) for row in rows)
 
@@ -133,7 +134,7 @@ class FreshTestRepository:
         rows = self._db.query(
             "SELECT DISTINCT ticket_number FROM fresh_test WHERE taken_at >= ? "
             "AND taken_at < ? ORDER BY ticket_number",
-            (start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            day_range(start, end),
         )
         return tuple(str(row["ticket_number"]) for row in rows)
 

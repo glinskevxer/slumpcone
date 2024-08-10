@@ -17,21 +17,9 @@ from slumpcone.project.project import Project, SpecifiedClass
 from slumpcone.project.submittal import Submittal, SubmittalBasis, SubmittalStatus
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
-from slumpcone.tolerance import Band
+from slumpcone.store.rows import band_columns, band_from
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.system import UnitSystem
-
-
-def _band_from(target: float | None, minus: float | None, plus: float | None) -> Band | None:
-    if target is None or (minus is None and plus is None):
-        return None
-    return Band(target, minus, plus)
-
-
-def _band_columns(band: Band | None) -> tuple[float | None, float | None, float | None]:
-    if band is None:
-        return (None, None, None)
-    return (band.target, band.minus, band.plus)
 
 
 def _class_from_row(row: sqlite3.Row) -> SpecifiedClass:
@@ -40,12 +28,12 @@ def _class_from_row(row: sqlite3.Row) -> SpecifiedClass:
         specified_strength=Quantity(float(row["specified_strength_psi"]), "psi"),
         test_age_days=int(row["test_age_days"]),
         exposure=ExposureSet.parse(str(row["exposure"])),
-        slump_band=_band_from(
+        slump_band=band_from(
             None if row["slump_target_in"] is None else float(row["slump_target_in"]),
             None if row["slump_minus_in"] is None else float(row["slump_minus_in"]),
             None if row["slump_plus_in"] is None else float(row["slump_plus_in"]),
         ),
-        air_band=_band_from(
+        air_band=band_from(
             None if row["air_target_pct"] is None else float(row["air_target_pct"]),
             None if row["air_minus_pct"] is None else float(row["air_minus_pct"]),
             None if row["air_plus_pct"] is None else float(row["air_plus_pct"]),
@@ -130,8 +118,8 @@ class ProjectRepository:
                 "DELETE FROM project_class WHERE project_code = ?", (project.code,)
             )
             for entry in project.classes:
-                slump = _band_columns(entry.slump_band)
-                air = _band_columns(entry.air_band)
+                slump = band_columns(entry.slump_band)
+                air = band_columns(entry.air_band)
                 self._db.execute(
                     "INSERT INTO project_class (project_code, code, specified_strength_psi, "
                     "test_age_days, exposure, slump_target_in, slump_minus_in, slump_plus_in, "

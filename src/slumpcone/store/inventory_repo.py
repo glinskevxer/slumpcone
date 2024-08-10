@@ -17,6 +17,7 @@ from slumpcone.percent import Percent
 from slumpcone.plant.inventory import InventoryLedger, Movement, MovementKind
 from slumpcone.plant.receipt import Receipt
 from slumpcone.store.db import Database
+from slumpcone.store.rows import day_range
 from slumpcone.units.quantity import Quantity
 
 
@@ -102,7 +103,7 @@ class InventoryRepository:
         rows = self._db.query(
             "SELECT * FROM material_receipt WHERE plant_code = ? AND received_at >= ? "
             "AND received_at < ? ORDER BY received_at, reference",
-            (key, start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            (key, *day_range(start, end)),
         )
         return tuple(_receipt_from_row(row) for row in rows)
 
@@ -161,7 +162,7 @@ class InventoryRepository:
         rows = self._db.query(
             "SELECT * FROM inventory_movement WHERE plant_code = ? AND at >= ? AND at < ? "
             "ORDER BY at, silo_code, id",
-            (key, start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            (key, *day_range(start, end)),
         )
         return tuple(_movement_from_row(row) for row in rows)
 

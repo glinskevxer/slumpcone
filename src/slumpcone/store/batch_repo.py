@@ -16,6 +16,7 @@ from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.materials.kinds import MaterialClass
 from slumpcone.store.db import Database
+from slumpcone.store.rows import day_range
 from slumpcone.units.quantity import Quantity
 
 
@@ -156,7 +157,7 @@ class BatchRepository:
         rows = self._db.query(
             "SELECT * FROM batch_ticket WHERE batched_at >= ? AND batched_at < ? "
             "ORDER BY batched_at, number",
-            (start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            day_range(start, end),
         )
         return tuple(self._from_row(row) for row in rows)
 

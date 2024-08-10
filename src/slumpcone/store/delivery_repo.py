@@ -17,11 +17,8 @@ from slumpcone.delivery.water import RequestedBy, WaterAddition
 from slumpcone.errors import NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.store.db import Database
+from slumpcone.store.rows import day_range, moment
 from slumpcone.units.quantity import Quantity
-
-
-def _moment(value: object) -> datetime | None:
-    return None if value is None else datetime.fromisoformat(str(value))
 
 
 def _truck_from_row(row: sqlite3.Row) -> Truck:
@@ -176,10 +173,10 @@ class DeliveryRepository:
             ticket_number=ticket,
             truck_code=str(row["truck_code"]),
             batched_at=datetime.fromisoformat(str(row["batched_at"])),
-            left_plant_at=_moment(row["left_plant_at"]),
-            arrived_at=_moment(row["arrived_at"]),
-            discharge_started_at=_moment(row["discharge_started_at"]),
-            discharge_finished_at=_moment(row["discharge_finished_at"]),
+            left_plant_at=moment(row["left_plant_at"]),
+            arrived_at=moment(row["arrived_at"]),
+            discharge_started_at=moment(row["discharge_started_at"]),
+            discharge_finished_at=moment(row["discharge_finished_at"]),
             revolutions_on_arrival=(
                 None
                 if row["revolutions_on_arrival"] is None
@@ -212,7 +209,7 @@ class DeliveryRepository:
         rows = self._db.query(
             "SELECT * FROM delivery WHERE batched_at >= ? AND batched_at < ? "
             "ORDER BY batched_at, ticket_number",
-            (start.isoformat(), f"{end.isoformat()}T23:59:59.999999"),
+            day_range(start, end),
         )
         return tuple(self._from_row(row) for row in rows)
 

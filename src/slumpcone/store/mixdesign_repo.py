@@ -18,21 +18,9 @@ from slumpcone.mixdesign.proportions import AdmixtureCharge, Charge, Proportions
 from slumpcone.percent import Percent
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
-from slumpcone.tolerance import Band
+from slumpcone.store.rows import band_columns, band_from
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.rate import MassPerVolume
-
-
-def _band_columns(band: Band | None, target: float | None = None) -> tuple[float | None, ...]:
-    if band is None:
-        return (target, None, None)
-    return (band.target, band.minus, band.plus)
-
-
-def _band_from(target: float | None, minus: float | None, plus: float | None) -> Band | None:
-    if target is None or (minus is None and plus is None):
-        return None
-    return Band(target, minus, plus)
 
 
 class MixDesignRepository:
@@ -49,10 +37,8 @@ class MixDesignRepository:
         )
         if existing is not None:
             raise ConflictError("mix design revision", design.identity)
-        slump_target, slump_minus, slump_plus = _band_columns(
-            design.slump_band, design.slump_target.to("in").value
-        )
-        air_target, air_minus, air_plus = _band_columns(design.air_band)
+        slump_target, slump_minus, slump_plus = band_columns(design.slump_band)
+        air_target, air_minus, air_plus = band_columns(design.air_band)
         with self._db.transaction():
             self._db.execute(
                 "INSERT INTO mix_design (code, revision, name, plant_code, "
@@ -150,7 +136,7 @@ class MixDesignRepository:
             nominal_max_size=Quantity(float(row["nominal_max_size_mm"]), "mm"),
             slump_target=Quantity(float(row["slump_target_in"]), "in"),
             test_age_days=int(row["test_age_days"]),
-            slump_band=_band_from(
+            slump_band=band_from(
                 (
                     None
                     if row["slump_band_target_in"] is None
@@ -159,7 +145,7 @@ class MixDesignRepository:
                 None if row["slump_minus_in"] is None else float(row["slump_minus_in"]),
                 None if row["slump_plus_in"] is None else float(row["slump_plus_in"]),
             ),
-            air_band=_band_from(
+            air_band=band_from(
                 None if row["air_target_pct"] is None else float(row["air_target_pct"]),
                 None if row["air_minus_pct"] is None else float(row["air_minus_pct"]),
                 None if row["air_plus_pct"] is None else float(row["air_plus_pct"]),
