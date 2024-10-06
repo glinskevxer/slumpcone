@@ -16,6 +16,7 @@ import click
 
 from slumpcone import __version__
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
+from slumpcone.cli.material_cmds import material_group
 from slumpcone.cli.register_cmds import register_group
 
 
@@ -37,6 +38,7 @@ def cli(ctx: click.Context, register_path: str | None, quiet: bool) -> None:
 
 
 cli.add_command(register_group)
+cli.add_command(material_group)
 
 
 def main(argv: list[str] | None = None) -> int:
