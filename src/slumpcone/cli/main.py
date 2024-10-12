@@ -17,6 +17,7 @@ import click
 from slumpcone import __version__
 from slumpcone.cli.batch_cmds import batch_group
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
+from slumpcone.cli.field_cmds import field_group
 from slumpcone.cli.material_cmds import material_group
 from slumpcone.cli.mix_cmds import mix_group
 from slumpcone.cli.plant_cmds import plant_group
@@ -45,6 +46,7 @@ cli.add_command(material_group)
 cli.add_command(plant_group)
 cli.add_command(mix_group)
 cli.add_command(batch_group)
+cli.add_command(field_group)
 
 
 def main(argv: list[str] | None = None) -> int:
