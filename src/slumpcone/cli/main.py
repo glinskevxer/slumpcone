@@ -23,6 +23,7 @@ from slumpcone.cli.lab_cmds import lab_group
 from slumpcone.cli.material_cmds import material_group
 from slumpcone.cli.mix_cmds import mix_group
 from slumpcone.cli.plant_cmds import plant_group
+from slumpcone.cli.project_cmds import project_group
 from slumpcone.cli.register_cmds import register_group
 
 
@@ -51,6 +52,7 @@ cli.add_command(batch_group)
 cli.add_command(field_group)
 cli.add_command(lab_group)
 cli.add_command(delivery_group)
+cli.add_command(project_group)
 
 
 def main(argv: list[str] | None = None) -> int:
