@@ -19,6 +19,7 @@ from slumpcone.cli.batch_cmds import batch_group
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
 from slumpcone.cli.delivery_cmds import delivery_group
 from slumpcone.cli.field_cmds import field_group
+from slumpcone.cli.import_cmds import import_group
 from slumpcone.cli.inventory_cmds import inventory_group
 from slumpcone.cli.lab_cmds import lab_group
 from slumpcone.cli.material_cmds import material_group
@@ -55,6 +56,7 @@ cli.add_command(lab_group)
 cli.add_command(delivery_group)
 cli.add_command(project_group)
 cli.add_command(inventory_group)
+cli.add_command(import_group)
 
 
 def main(argv: list[str] | None = None) -> int:
