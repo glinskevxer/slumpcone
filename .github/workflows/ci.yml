@@ -60,3 +60,32 @@ jobs:
         run: python -m pip install -e ".[dev]"
       - name: pytest
         run: python -m pytest -q
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: build the wheel
+        run: |
+          python -m pip install "hatchling==1.27.0" build
+          python -m build --wheel
+      - name: install the wheel on its own
+        run: python -m pip install dist/*.whl
+      - name: the installed command answers for itself
+        run: |
+          slumpcone --version
+          slumpcone import profiles
+      - name: the installed command can build a register
+        run: |
+          cd "$(mktemp -d)"
+          slumpcone register init
+          slumpcone demo seed
+          slumpcone register info
+          slumpcone mix check 4000P-57
+          slumpcone batch audit --from 2024-06-12 --to 2024-06-12
+          slumpcone lab strength 4000P-57 --specified 4000 psi || true
+          slumpcone report production --from 2024-06-12 --to 2024-06-12
+          slumpcone report compliance --on 2024-06-12 --within 120
