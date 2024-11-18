@@ -44,6 +44,7 @@ _COLUMNS = (
     "admixture_type",
     "solids_percent",
     "water_source",
+    "chloride_percent",
     "notes",
 )
 
@@ -79,6 +80,9 @@ def _to_row(material: Material) -> dict[str, object]:
             None if material.solids_content is None else material.solids_content.value
         ),
         "water_source": None if material.water_source is None else material.water_source.value,
+        "chloride_percent": (
+            None if material.chloride_content is None else material.chloride_content.value
+        ),
         "notes": material.notes,
     }
 
@@ -121,6 +125,9 @@ def _from_row(row: sqlite3.Row) -> Material:
         ),
         water_source=(
             None if row["water_source"] is None else WaterSource(str(row["water_source"]))
+        ),
+        chloride_content=(
+            None if row["chloride_percent"] is None else Percent(float(row["chloride_percent"]))
         ),
         notes=str(row["notes"]),
     )

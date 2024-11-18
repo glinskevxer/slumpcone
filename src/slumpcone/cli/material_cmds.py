@@ -45,6 +45,7 @@ def material_group() -> None:
 @click.option("--scm-kind", default=None)
 @click.option("--admixture-type", default=None)
 @click.option("--solids", type=float, default=None, help="Solids content, percent.")
+@click.option("--chloride", type=float, default=None, help="Chloride assay, percent.")
 @click.option("--water-source", default=None)
 @click.option("--notes", default="")
 @click.pass_obj
@@ -65,6 +66,7 @@ def add_command(
     scm_kind: str | None,
     admixture_type: str | None,
     solids: float | None,
+    chloride: float | None,
     water_source: str | None,
     notes: str,
 ) -> None:
@@ -84,6 +86,7 @@ def add_command(
         scm_kind=None if scm_kind is None else ScmKind.parse(scm_kind),
         admixture_type=None if admixture_type is None else AdmixtureType.parse(admixture_type),
         solids_content=None if solids is None else Percent(solids),
+        chloride_content=None if chloride is None else Percent(chloride),
         water_source=None if water_source is None else WaterSource.parse(water_source),
         notes=notes,
     )
@@ -154,6 +157,10 @@ def show_command(context: CliContext, code: str, on: date) -> None:
                 (
                     "nominal max size",
                     "-" if material.nominal_max_size is None else material.nominal_max_size,
+                ),
+                (
+                    "chloride",
+                    "-" if material.chloride_content is None else material.chloride_content,
                 ),
                 (
                     "needs",

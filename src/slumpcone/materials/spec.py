@@ -62,6 +62,7 @@ class Material:
     admixture_type: AdmixtureType | None = None
     solids_content: Percent | None = None
     water_source: WaterSource | None = None
+    chloride_content: Percent | None = None
     notes: str = field(default="")
 
     def __post_init__(self) -> None:
@@ -134,10 +135,26 @@ class Material:
                 f"solids content {self.solids_content} is outside 0 to 100 percent",
                 field="solids_content",
             )
+        if self.chloride_content is not None and not 0.0 <= self.chloride_content.value <= 5.0:
+            raise ValidationError(
+                f"a chloride content of {self.chloride_content} is not a material assay",
+                field="chloride_content",
+            )
         if self.nominal_max_size is not None and self.nominal_max_size.value <= 0.0:
             raise ValidationError(
                 "a nominal maximum size has to be positive", field="nominal_max_size"
             )
+
+    @property
+    def has_chloride_assay(self) -> bool:
+        """True when somebody has actually measured this material's chloride.
+
+        A missing figure is not zero. Aggregate dredged from a tidal estuary
+        carries chloride and looks exactly like aggregate that does not, so a
+        calculation that treats an absent assay as nothing is quietly wrong in
+        the one case that matters.
+        """
+        return self.chloride_content is not None
 
     @property
     def is_cementitious(self) -> bool:
