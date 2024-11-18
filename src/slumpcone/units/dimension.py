@@ -23,6 +23,7 @@ class Dimension(Enum):
 
     MASS = "mass"
     VOLUME = "volume"
+    AREA = "area"
     LENGTH = "length"
     PRESSURE = "pressure"
     FORCE = "force"
@@ -56,6 +57,12 @@ _TABLE: tuple[UnitDef, ...] = (
     UnitDef("ft3", Dimension.VOLUME, 0.028316846592),
     UnitDef("gal", Dimension.VOLUME, 0.003785411784),
     UnitDef("floz", Dimension.VOLUME, 2.95735295625e-5),
+    UnitDef("m2", Dimension.AREA, 1.0),
+    UnitDef("cm2", Dimension.AREA, 1e-4),
+    UnitDef("mm2", Dimension.AREA, 1e-6),
+    UnitDef("in2", Dimension.AREA, 0.00064516),
+    UnitDef("ft2", Dimension.AREA, 0.09290304),
+    UnitDef("yd2", Dimension.AREA, 0.83612736),
     UnitDef("m", Dimension.LENGTH, 1.0),
     UnitDef("cm", Dimension.LENGTH, 1e-2),
     UnitDef("mm", Dimension.LENGTH, 1e-3),
@@ -94,6 +101,15 @@ _ALIASES: dict[str, str] = {
     "ft³": "ft3",
     "cuft": "ft3",
     "m^3": "m3",
+    "sf": "ft2",
+    "sqft": "ft2",
+    "ft^2": "ft2",
+    "ft²": "ft2",
+    "sy": "yd2",
+    "sqyd": "yd2",
+    "m^2": "m2",
+    "m²": "m2",
+    "sqm": "m2",
     "m³": "m3",
     "l": "L",
     "litre": "L",

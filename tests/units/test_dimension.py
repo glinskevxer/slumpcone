@@ -61,6 +61,11 @@ class CaseTable:
         assert "lb" in mass
         assert "psi" not in mass
 
+    def test_the_area_rows_were_added_for_the_sampling_rule(self) -> None:
+        assert dimension_of("ft2") is Dimension.AREA
+        assert resolve("sf").symbol == "ft2"
+        assert resolve("yd2").to_base == pytest.approx(9 * resolve("ft2").to_base, rel=1e-9)
+
     def test_the_force_row_was_added_for_the_testing_machine(self) -> None:
         assert dimension_of("lbf") is Dimension.FORCE
         assert dimension_of("kN") is Dimension.FORCE

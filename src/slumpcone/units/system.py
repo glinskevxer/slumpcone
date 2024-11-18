@@ -67,6 +67,11 @@ class UnitSystem(Enum):
         return "gal" if self is UnitSystem.CUSTOMARY else "L"
 
     @property
+    def area(self) -> str:
+        """The unit a placement's surface area prints in."""
+        return "ft2" if self is UnitSystem.CUSTOMARY else "m2"
+
+    @property
     def length(self) -> str:
         """The unit a slump and an aggregate size print in."""
         return "in" if self is UnitSystem.CUSTOMARY else "mm"
@@ -91,6 +96,7 @@ class UnitSystem(Enum):
         table = {
             Dimension.MASS: self.mass,
             Dimension.VOLUME: self.volume,
+            Dimension.AREA: self.area,
             Dimension.LENGTH: self.length,
             Dimension.PRESSURE: self.pressure,
             Dimension.FORCE: self.force,
