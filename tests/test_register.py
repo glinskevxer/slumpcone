@@ -59,6 +59,7 @@ class CaseRepositories:
             "orders",
             "inventory",
             "ingest",
+            "prices",
         ):
             assert getattr(register, name) is not None
 

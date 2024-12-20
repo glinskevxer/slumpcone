@@ -29,6 +29,7 @@ from slumpcone.store.migrations import current_version, load_migrations, migrate
 from slumpcone.store.mixdesign_repo import MixDesignRepository
 from slumpcone.store.order_repo import OrderRepository
 from slumpcone.store.plant_repo import PlantRepository
+from slumpcone.store.pricing_repo import PricingRepository
 from slumpcone.store.project_repo import ProjectRepository
 from slumpcone.store.strength_repo import StrengthRepository
 
@@ -47,6 +48,7 @@ COUNTED_TABLES = (
     "material_receipt",
     "inventory_movement",
     "ingest_run",
+    "material_price",
 )
 
 
@@ -92,6 +94,7 @@ class Register:
         self.orders = OrderRepository(database)
         self.inventory = InventoryRepository(database)
         self.ingest = IngestRepository(database)
+        self.prices = PricingRepository(database)
 
     @classmethod
     def open(cls, path: str | Path) -> Register:
