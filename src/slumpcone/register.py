@@ -18,6 +18,7 @@ from datetime import date
 from pathlib import Path
 from types import TracebackType
 
+from slumpcone.store.audit import AuditLog
 from slumpcone.store.batch_repo import BatchRepository
 from slumpcone.store.db import Database
 from slumpcone.store.delivery_repo import DeliveryRepository
@@ -49,6 +50,7 @@ COUNTED_TABLES = (
     "inventory_movement",
     "ingest_run",
     "material_price",
+    "audit_event",
 )
 
 
@@ -95,6 +97,7 @@ class Register:
         self.inventory = InventoryRepository(database)
         self.ingest = IngestRepository(database)
         self.prices = PricingRepository(database)
+        self.audit = AuditLog(database)
 
     @classmethod
     def open(cls, path: str | Path) -> Register:
