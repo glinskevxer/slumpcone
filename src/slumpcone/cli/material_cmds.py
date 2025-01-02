@@ -46,6 +46,7 @@ def material_group() -> None:
 @click.option("--admixture-type", default=None)
 @click.option("--solids", type=float, default=None, help="Solids content, percent.")
 @click.option("--chloride", type=float, default=None, help="Chloride assay, percent.")
+@click.option("--alkali", type=float, default=None, help="Alkali equivalent, percent.")
 @click.option("--water-source", default=None)
 @click.option("--notes", default="")
 @click.pass_obj
@@ -67,6 +68,7 @@ def add_command(
     admixture_type: str | None,
     solids: float | None,
     chloride: float | None,
+    alkali: float | None,
     water_source: str | None,
     notes: str,
 ) -> None:
@@ -87,6 +89,7 @@ def add_command(
         admixture_type=None if admixture_type is None else AdmixtureType.parse(admixture_type),
         solids_content=None if solids is None else Percent(solids),
         chloride_content=None if chloride is None else Percent(chloride),
+        alkali_content=None if alkali is None else Percent(alkali),
         water_source=None if water_source is None else WaterSource.parse(water_source),
         notes=notes,
     )

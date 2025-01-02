@@ -63,6 +63,7 @@ class Material:
     solids_content: Percent | None = None
     water_source: WaterSource | None = None
     chloride_content: Percent | None = None
+    alkali_content: Percent | None = None
     notes: str = field(default="")
 
     def __post_init__(self) -> None:
@@ -139,6 +140,11 @@ class Material:
             raise ValidationError(
                 f"a chloride content of {self.chloride_content} is not a material assay",
                 field="chloride_content",
+            )
+        if self.alkali_content is not None and not 0.0 <= self.alkali_content.value <= 5.0:
+            raise ValidationError(
+                f"an alkali content of {self.alkali_content} is not a mill certificate",
+                field="alkali_content",
             )
         if self.nominal_max_size is not None and self.nominal_max_size.value <= 0.0:
             raise ValidationError(

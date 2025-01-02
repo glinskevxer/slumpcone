@@ -57,6 +57,6 @@ class CaseField:
     def test_the_column_was_added_by_a_migration(self, repo: MaterialRepository) -> None:
         assert "chloride_percent" in repo._db.column_names("material")
 
-    def test_the_column_is_last_because_it_was_added(self, repo: MaterialRepository) -> None:
+    def test_the_column_comes_after_the_original_ones(self, repo: MaterialRepository) -> None:
         columns = repo._db.column_names("material")
-        assert columns[-1] == "chloride_percent"
+        assert columns.index("chloride_percent") > columns.index("notes")
