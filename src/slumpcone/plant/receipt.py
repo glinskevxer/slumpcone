@@ -22,6 +22,7 @@ from slumpcone.errors import RuleViolationError, ValidationError
 from slumpcone.identity import normalize_code, normalize_name
 from slumpcone.percent import Percent
 from slumpcone.plant.silo import Silo
+from slumpcone.units.checks import require_mass, require_positive
 from slumpcone.units.quantity import Quantity
 
 
@@ -59,10 +60,8 @@ class Receipt:
             value = getattr(self, label)
             if value is not None:
                 object.__setattr__(self, label, normalize_code(value, field=label))
-        if self.quantity.dimension.value != "mass":
-            raise ValidationError("a received quantity is a mass", field="quantity")
-        if self.quantity.value <= 0.0:
-            raise ValidationError("a received quantity has to be positive", field="quantity")
+        require_mass(self.quantity, "a received quantity", field="quantity")
+        require_positive(self.quantity, "a received quantity", field="quantity")
         if self.moisture is not None and not 0.0 <= self.moisture.value <= 20.0:
             raise ValidationError(
                 f"a moisture of {self.moisture} on a receipt is a probe fault", field="moisture"

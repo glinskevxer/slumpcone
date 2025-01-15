@@ -26,6 +26,7 @@ from slumpcone.identity import normalize_code
 from slumpcone.materials.kinds import MaterialClass
 from slumpcone.mixdesign.proportions import Proportions
 from slumpcone.percent import Percent
+from slumpcone.units.checks import require_mass, require_positive, require_volume
 from slumpcone.units.quantity import Quantity
 
 # Above this, the reading is a probe fault rather than a wet pile. Sand off a
@@ -77,8 +78,7 @@ class AggregateMoisture:
 
     def batch_weight(self, ssd_weight: Quantity) -> Quantity:
         """The weight to put on the scale to get ``ssd_weight`` of solid."""
-        if ssd_weight.dimension.value != "mass":
-            raise ValidationError("an SSD weight is a mass", field="ssd_weight")
+        require_mass(ssd_weight, "an SSD weight", field="ssd_weight")
         return ssd_weight * self.factor
 
     def free_water(self, ssd_weight: Quantity) -> Quantity:
@@ -146,10 +146,8 @@ def correct_batch(
     a plant with a broken probe on one bin still has to be able to batch, and
     the missing correction shows up in the water on the ticket.
     """
-    if volume.dimension.value != "volume":
-        raise ValidationError("a batch size is a volume", field="volume")
-    if volume.value <= 0.0:
-        raise ValidationError("a batch size has to be positive", field="volume")
+    require_volume(volume, "a batch size", field="volume")
+    require_positive(volume, "a batch size", field="volume")
     design = proportions.batch_weights(volume)
     water_charges = proportions.of_class(MaterialClass.WATER)
     water_code = water_charges[0].material_code

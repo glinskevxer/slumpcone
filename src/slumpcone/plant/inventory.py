@@ -20,6 +20,7 @@ from enum import Enum
 
 from slumpcone.errors import ValidationError
 from slumpcone.identity import normalize_code
+from slumpcone.units.checks import require_mass
 from slumpcone.units.quantity import Quantity
 
 
@@ -96,8 +97,7 @@ class Movement:
             object.__setattr__(
                 self, "reference", normalize_code(self.reference, field="reference")
             )
-        if self.quantity.dimension.value != "mass":
-            raise ValidationError("a movement quantity is a mass", field="quantity")
+        require_mass(self.quantity, "a movement quantity", field="quantity")
         if not self.kind.is_signed and self.quantity.value < 0.0:
             raise ValidationError(
                 f"a {self.kind} cannot be negative; use an adjustment", field="quantity"
@@ -173,8 +173,7 @@ class InventoryLedger:
         Returns ``None`` when the two already agree, so a plant that probes a
         silo every week does not accumulate a pile of zero adjustments.
         """
-        if measured.dimension.value != "mass":
-            raise ValidationError("a measured level is a mass", field="measured")
+        require_mass(measured, "a measured level", field="measured")
         history = self.movements_for(silo_code, until=at)
         if not history:
             raise ValidationError(

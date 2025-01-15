@@ -20,6 +20,7 @@ from enum import Enum
 from slumpcone.errors import ValidationError
 from slumpcone.identity import normalize_code, normalize_name
 from slumpcone.materials.kinds import MaterialClass
+from slumpcone.units.checks import require_mass, require_positive
 from slumpcone.units.quantity import Quantity
 
 # How often a batching scale is verified. Plant certification schemes and most
@@ -62,14 +63,16 @@ class Scale:
     def __post_init__(self) -> None:
         object.__setattr__(self, "code", normalize_code(self.code, field="scale_code"))
         object.__setattr__(self, "name", normalize_name(self.name, field="scale_name"))
-        if self.capacity.dimension.value != "mass":
-            raise ValidationError("a scale capacity is a mass", field="capacity")
-        if self.graduation.dimension.value != "mass":
-            raise ValidationError("a scale graduation is a mass", field="graduation")
-        if self.capacity.value <= 0.0:
-            raise ValidationError("a scale capacity has to be positive", field="capacity")
-        if self.graduation.value <= 0.0:
-            raise ValidationError("a scale graduation has to be positive", field="graduation")
+        require_positive(
+            require_mass(self.capacity, "a scale capacity", field="capacity"),
+            "a scale capacity",
+            field="capacity",
+        )
+        require_positive(
+            require_mass(self.graduation, "a scale graduation", field="graduation"),
+            "a scale graduation",
+            field="graduation",
+        )
         if self.graduation >= self.capacity:
             raise ValidationError(
                 "a scale graduation has to be smaller than its capacity", field="graduation"

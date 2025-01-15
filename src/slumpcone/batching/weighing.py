@@ -18,10 +18,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from slumpcone.errors import ValidationError
 from slumpcone.materials.kinds import MaterialClass
 from slumpcone.percent import Percent
 from slumpcone.tolerance import Band, Side
+from slumpcone.units.checks import require_mass, require_not_negative, require_positive
 from slumpcone.units.quantity import Quantity
 
 # The charge size, as a share of scale capacity, where the rule changes.
@@ -57,18 +57,14 @@ def weighing_allowance(
     With no scale named the plain percentage applies, which is what a metered
     water or admixture charge gets anyway.
     """
-    if required.dimension.value != "mass":
-        raise ValidationError("a required weight is a mass", field="required")
-    if required.value < 0.0:
-        raise ValidationError("a required weight cannot be negative", field="required")
+    require_mass(required, "a required weight", field="required")
+    require_not_negative(required, "a required weight", field="required")
     plain = abs(required) * _large_charge_allowance(material_class).fraction
     weighed = material_class.is_cementitious or material_class.is_aggregate
     if scale_capacity is None or not weighed:
         return plain
-    if scale_capacity.dimension.value != "mass":
-        raise ValidationError("a scale capacity is a mass", field="scale_capacity")
-    if scale_capacity.value <= 0.0:
-        raise ValidationError("a scale capacity has to be positive", field="scale_capacity")
+    require_mass(scale_capacity, "a scale capacity", field="scale_capacity")
+    require_positive(scale_capacity, "a scale capacity", field="scale_capacity")
     share = Percent.from_fraction(required.base_value / scale_capacity.base_value)
     if share >= SMALL_CHARGE_THRESHOLD:
         return plain
