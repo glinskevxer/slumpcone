@@ -1,26 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
+from click.testing import CliRunner
 
-import pytest
-from click.testing import CliRunner, Result
-
-from slumpcone.cli.main import cli
+from tests.cli.support import run
 from tests.cli.test_batch_cmds import stock
-
-
-@pytest.fixture()
-def runner() -> CliRunner:
-    return CliRunner()
-
-
-@pytest.fixture()
-def register(tmp_path: Path) -> str:
-    return str(tmp_path / "r.sqlite3")
-
-
-def run(runner: CliRunner, register: str, *args: str) -> Result:
-    return runner.invoke(cli, ["--register", register, *args])
 
 
 def write_ticket(runner: CliRunner, register: str) -> None:

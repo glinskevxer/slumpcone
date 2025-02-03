@@ -118,3 +118,19 @@ class CaseRegisterGroup:
         assert result.exit_code != 0  # type: ignore[attr-defined]
         assert "edited since" in result.output  # type: ignore[attr-defined]
         assert "Traceback" not in result.output  # type: ignore[attr-defined]
+
+
+class CaseSharedFixtures:
+    def test_the_register_fixture_is_per_test(self, register: str) -> None:
+        assert register.endswith("r.sqlite3")
+
+    def test_the_invoke_fixture_targets_it(self, invoke: object, register: str) -> None:
+        from pathlib import Path
+
+        result = invoke("register", "init")  # type: ignore[operator]
+        assert result.exit_code == 0
+        assert Path(register).exists()
+
+    def test_the_invoke_fixture_carries_errors_through(self, invoke: object) -> None:
+        result = invoke("material", "show", "CEM-IX")  # type: ignore[operator]
+        assert result.exit_code != 0
