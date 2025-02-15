@@ -18,6 +18,7 @@ from slumpcone import __version__
 from slumpcone.cli.audit_cmds import audit_group
 from slumpcone.cli.batch_cmds import batch_group
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
+from slumpcone.cli.control_cmds import control_group
 from slumpcone.cli.delivery_cmds import delivery_group
 from slumpcone.cli.demo_cmds import demo_group
 from slumpcone.cli.export_cmds import export_group
@@ -66,6 +67,7 @@ cli.add_command(report_group)
 cli.add_command(price_group)
 cli.add_command(export_group)
 cli.add_command(audit_group)
+cli.add_command(control_group)
 cli.add_command(demo_group)
 
 
