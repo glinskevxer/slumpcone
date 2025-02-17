@@ -244,3 +244,125 @@ class CaseYield:
             "2024-06-30",
         )
         assert result.exit_code != 0
+
+
+class CaseFleet:
+    def test_an_empty_window(self, runner: CliRunner, register: str) -> None:
+        result = run(
+            runner,
+            register,
+            "report",
+            "fleet",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+        )
+        assert result.exit_code == 0
+        assert "Fleet" in result.output
+
+    def test_with_deliveries(self, runner: CliRunner, register: str) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(
+            runner,
+            register,
+            "report",
+            "fleet",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+        )
+        assert "TR-114" in result.output
+        assert "avg turn" in result.output
+        assert "Where the time went" in result.output
+
+    def test_the_shift_and_cycle_change_the_utilisation(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        run(runner, register, "demo", "seed")
+        long_shift = run(
+            runner,
+            register,
+            "report",
+            "fleet",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+            "--shift",
+            "1200",
+        )
+        short_shift = run(
+            runner,
+            register,
+            "report",
+            "fleet",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+            "--shift",
+            "300",
+        )
+        assert long_shift.output != short_shift.output
+
+
+class CaseFrequency:
+    def test_an_empty_window(self, runner: CliRunner, register: str) -> None:
+        result = run(
+            runner,
+            register,
+            "report",
+            "frequency",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+        )
+        assert result.exit_code == 0
+        assert "Sampling frequency" in result.output
+
+    def test_with_production(self, runner: CliRunner, register: str) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(
+            runner,
+            register,
+            "report",
+            "frequency",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+        )
+        assert "4000P-57" in result.output
+        assert "governed by" in result.output
+
+    def test_a_surface_area_can_raise_the_requirement(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        run(runner, register, "demo", "seed")
+        plain = run(
+            runner,
+            register,
+            "report",
+            "frequency",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+        )
+        with_area = run(
+            runner,
+            register,
+            "report",
+            "frequency",
+            "--from",
+            "2024-06-01",
+            "--to",
+            "2024-06-30",
+            "--area",
+            "60000 ft2",
+        )
+        assert "surface area" in with_area.output
+        assert "surface area" not in plain.output

@@ -15,6 +15,7 @@ from slumpcone.report.compliance import (
     from_trucks,
     render_compliance_report,
 )
+from slumpcone.report.fleet import render_fleet_report
 from slumpcone.report.nonconformance import (
     counts_by_severity,
     from_haul,
@@ -25,7 +26,9 @@ from slumpcone.report.nonconformance import (
 )
 from slumpcone.report.production import render_production_report
 from slumpcone.report.yield_report import render_yield_report
-from slumpcone.textout import heading, render_pairs
+from slumpcone.spec.frequency import check_frequency
+from slumpcone.textout import Align, Column, heading, render_pairs, render_table
+from slumpcone.units.quantity import Quantity
 
 
 @click.group("report")
@@ -124,3 +127,72 @@ def yield_command(context: CliContext, mix_code: str, start: date, end: date) ->
             test for test in register.fresh.between(start, end) if test.ticket_number in tickets
         ]
     click.echo(render_yield_report(design.code, tests, design.proportions, gravities))
+
+
+@report_group.command("fleet")
+@window_options
+@click.option("--shift", type=float, default=600.0, help="Shift length in minutes.")
+@click.option("--cycle", type=float, default=90.0, help="Expected cycle in minutes.")
+@click.pass_obj
+@handle_errors
+def fleet_command(
+    context: CliContext, start: date, end: date, shift: float, cycle: float
+) -> None:
+    """Where the trucks went and where the time went."""
+    with context.register() as register:
+        deliveries = register.deliveries.between(start, end)
+        tickets = register.batches.between(start, end)
+    click.echo(
+        render_fleet_report(
+            list(deliveries),
+            list(tickets),
+            shift_minutes=shift,
+            cycle_minutes=cycle,
+        )
+    )
+
+
+@report_group.command("frequency")
+@window_options
+@click.option("--area", default=None, help='Slab surface area, "24000 ft2".')
+@click.pass_obj
+@handle_errors
+def frequency_command(context: CliContext, start: date, end: date, area: str | None) -> None:
+    """Whether each mixture was sampled often enough over a window."""
+    surface = None if area is None else Quantity.parse(area)
+    rows: list[list[object]] = []
+    with context.register() as register:
+        tickets = register.batches.between(start, end)
+        by_mix: dict[str, list[object]] = {}
+        for ticket in tickets:
+            by_mix.setdefault(ticket.mix_code, []).append(ticket)
+        for mix_code, placed in sorted(by_mix.items()):
+            volume = Quantity.zero("yd3")
+            days: set[date] = set()
+            for entry in placed:
+                volume = volume + entry.volume.to("yd3")  # type: ignore[attr-defined]
+                days.add(entry.batched_at.date())  # type: ignore[attr-defined]
+            taken = len(register.strength.tests_for_mix(mix_code))
+            finding = check_frequency(mix_code, volume, len(days), taken, surface)
+            rows.append(
+                [
+                    finding.class_code,
+                    finding.volume.format(1),
+                    len(days),
+                    finding.requirement.required,
+                    finding.taken,
+                    finding.requirement.governing_rule,
+                    "yes" if finding.conforms else f"{finding.shortfall} short",
+                ]
+            )
+    columns = (
+        Column("mix"),
+        Column("volume", Align.RIGHT),
+        Column("days", Align.RIGHT),
+        Column("required", Align.RIGHT),
+        Column("taken", Align.RIGHT),
+        Column("governed by"),
+        Column("ok"),
+    )
+    click.echo(heading(f"Sampling frequency, {start.isoformat()} to {end.isoformat()}"))
+    click.echo(render_table(columns, rows))
