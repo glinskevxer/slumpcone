@@ -14,10 +14,8 @@ from datetime import date, datetime
 from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.fresh.tests import FreshTest, FreshTestKind
 from slumpcone.identity import normalize_ticket_number
-from slumpcone.percent import Percent
 from slumpcone.store.db import Database
-from slumpcone.store.rows import day_range
-from slumpcone.units.quantity import Quantity
+from slumpcone.store.rows import day_range, percent, quantity, text
 from slumpcone.units.rate import MassPerVolume
 from slumpcone.units.temperature import Temperature
 
@@ -27,8 +25,8 @@ def _from_row(row: sqlite3.Row) -> FreshTest:
         ticket_number=str(row["ticket_number"]),
         kind=FreshTestKind(str(row["kind"])),
         taken_at=datetime.fromisoformat(str(row["taken_at"])),
-        slump=None if row["slump_in"] is None else Quantity(float(row["slump_in"]), "in"),
-        air=None if row["air_pct"] is None else Percent(float(row["air_pct"])),
+        slump=quantity(row["slump_in"], "in"),
+        air=percent(row["air_pct"]),
         temperature=(
             None
             if row["temperature_f"] is None
@@ -39,12 +37,8 @@ def _from_row(row: sqlite3.Row) -> FreshTest:
             if row["unit_weight_lb_ft3"] is None
             else MassPerVolume(float(row["unit_weight_lb_ft3"]), "lb", "ft3")
         ),
-        discharged_before_sample=(
-            None
-            if row["discharged_before_yd3"] is None
-            else Quantity(float(row["discharged_before_yd3"]), "yd3")
-        ),
-        technician=None if row["technician"] is None else str(row["technician"]),
+        discharged_before_sample=(quantity(row["discharged_before_yd3"], "yd3")),
+        technician=text(row["technician"]),
         is_retest=bool(row["is_retest"]),
         notes=str(row["notes"]),
     )

@@ -18,7 +18,7 @@ from slumpcone.mixdesign.proportions import AdmixtureCharge, Charge, Proportions
 from slumpcone.percent import Percent
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
-from slumpcone.store.rows import band_columns, band_from
+from slumpcone.store.rows import band_columns, band_from, number, text
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.rate import MassPerVolume
 
@@ -137,22 +137,18 @@ class MixDesignRepository:
             slump_target=Quantity(float(row["slump_target_in"]), "in"),
             test_age_days=int(row["test_age_days"]),
             slump_band=band_from(
-                (
-                    None
-                    if row["slump_band_target_in"] is None
-                    else float(row["slump_band_target_in"])
-                ),
-                None if row["slump_minus_in"] is None else float(row["slump_minus_in"]),
-                None if row["slump_plus_in"] is None else float(row["slump_plus_in"]),
+                (number(row["slump_band_target_in"])),
+                number(row["slump_minus_in"]),
+                number(row["slump_plus_in"]),
             ),
             air_band=band_from(
-                None if row["air_target_pct"] is None else float(row["air_target_pct"]),
-                None if row["air_minus_pct"] is None else float(row["air_minus_pct"]),
-                None if row["air_plus_pct"] is None else float(row["air_plus_pct"]),
+                number(row["air_target_pct"]),
+                number(row["air_minus_pct"]),
+                number(row["air_plus_pct"]),
             ),
             exposure=ExposureSet.parse(str(row["exposure"])),
             revision=int(row["revision"]),
-            plant_code=None if row["plant_code"] is None else str(row["plant_code"]),
+            plant_code=text(row["plant_code"]),
             notes=str(row["notes"]),
         )
 

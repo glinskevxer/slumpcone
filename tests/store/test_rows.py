@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 import pytest
 
+from slumpcone.percent import Percent
 from slumpcone.store.rows import (
     band_columns,
     band_from,
@@ -11,9 +12,13 @@ from slumpcone.store.rows import (
     day_range,
     moment,
     number,
+    percent,
+    quantity,
     text,
+    whole,
 )
 from slumpcone.tolerance import Band
+from slumpcone.units.quantity import Quantity
 
 
 class CaseDayRange:
@@ -67,3 +72,24 @@ class CaseNullables:
     def test_number(self) -> None:
         assert number(None) is None
         assert number("4.5") == pytest.approx(4.5)
+
+
+class CaseTypedNullables:
+    def test_whole(self) -> None:
+        assert whole(None) is None
+        assert whole("7") == 7
+
+    def test_percent(self) -> None:
+        assert percent(None) is None
+        assert percent("6.0") == Percent(6.0)
+
+    def test_quantity_takes_its_unit_from_the_column(self) -> None:
+        assert quantity(None, "lb") is None
+        assert quantity("4230", "lb") == Quantity(4230, "lb")
+
+    def test_a_quantity_column_in_another_unit(self) -> None:
+        assert quantity("9", "yd3") == Quantity(9, "yd3")
+
+    def test_none_never_becomes_the_string_none(self) -> None:
+        for reader in (text, number, whole, day, moment, percent):
+            assert reader(None) is None

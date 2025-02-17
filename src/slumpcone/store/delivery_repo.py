@@ -17,7 +17,7 @@ from slumpcone.delivery.water import RequestedBy, WaterAddition
 from slumpcone.errors import NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.store.db import Database
-from slumpcone.store.rows import day_range, moment
+from slumpcone.store.rows import day, day_range, moment, quantity, text, whole
 from slumpcone.units.quantity import Quantity
 
 
@@ -25,12 +25,8 @@ def _truck_from_row(row: sqlite3.Row) -> Truck:
     return Truck(
         code=str(row["code"]),
         drum_volume=Quantity(float(row["drum_volume_yd3"]), "yd3"),
-        fleet=None if row["fleet"] is None else str(row["fleet"]),
-        last_uniformity_test=(
-            None
-            if row["last_uniformity_test"] is None
-            else date.fromisoformat(str(row["last_uniformity_test"]))
-        ),
+        fleet=text(row["fleet"]),
+        last_uniformity_test=(day(row["last_uniformity_test"])),
         uniformity_test_days=int(row["uniformity_test_days"]),
         notes=str(row["notes"]),
     )
@@ -43,11 +39,7 @@ def _addition_from_row(row: sqlite3.Row) -> WaterAddition:
         amount=Quantity(float(row["amount_gal"]), "gal"),
         requested_by=RequestedBy(str(row["requested_by"])),
         revolutions_after=int(row["revolutions_after"]),
-        discharged_before=(
-            None
-            if row["discharged_before_yd3"] is None
-            else Quantity(float(row["discharged_before_yd3"]), "yd3")
-        ),
+        discharged_before=(quantity(row["discharged_before_yd3"], "yd3")),
     )
 
 
@@ -177,22 +169,10 @@ class DeliveryRepository:
             arrived_at=moment(row["arrived_at"]),
             discharge_started_at=moment(row["discharge_started_at"]),
             discharge_finished_at=moment(row["discharge_finished_at"]),
-            revolutions_on_arrival=(
-                None
-                if row["revolutions_on_arrival"] is None
-                else int(row["revolutions_on_arrival"])
-            ),
-            revolutions_at_discharge=(
-                None
-                if row["revolutions_at_discharge"] is None
-                else int(row["revolutions_at_discharge"])
-            ),
+            revolutions_on_arrival=(whole(row["revolutions_on_arrival"])),
+            revolutions_at_discharge=(whole(row["revolutions_at_discharge"])),
             water_additions=tuple(_addition_from_row(entry) for entry in additions),
-            returned_volume=(
-                None
-                if row["returned_yd3"] is None
-                else Quantity(float(row["returned_yd3"]), "yd3")
-            ),
+            returned_volume=(quantity(row["returned_yd3"], "yd3")),
             notes=str(row["notes"]),
         )
 

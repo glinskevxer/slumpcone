@@ -16,7 +16,7 @@ from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.materials.kinds import MaterialClass
 from slumpcone.store.db import Database
-from slumpcone.store.rows import day_range
+from slumpcone.store.rows import day_range, quantity, text, whole
 from slumpcone.units.quantity import Quantity
 
 
@@ -125,22 +125,12 @@ class BatchRepository:
             volume=Quantity(float(row["volume_yd3"]), "yd3"),
             lines=tuple(_line_from_row(line) for line in lines),
             admixtures=tuple(_admixture_from_row(dose) for dose in doses),
-            truck_code=None if row["truck_code"] is None else str(row["truck_code"]),
-            purchaser=None if row["purchaser"] is None else str(row["purchaser"]),
-            project=None if row["project"] is None else str(row["project"]),
-            cumulative_volume=(
-                None
-                if row["cumulative_yd3"] is None
-                else Quantity(float(row["cumulative_yd3"]), "yd3")
-            ),
-            revolution_counter=(
-                None if row["revolution_counter"] is None else int(row["revolution_counter"])
-            ),
-            water_held_back=(
-                None
-                if row["water_held_back_lb"] is None
-                else Quantity(float(row["water_held_back_lb"]), "lb")
-            ),
+            truck_code=text(row["truck_code"]),
+            purchaser=text(row["purchaser"]),
+            project=text(row["project"]),
+            cumulative_volume=(quantity(row["cumulative_yd3"], "yd3")),
+            revolution_counter=(whole(row["revolution_counter"])),
+            water_held_back=(quantity(row["water_held_back_lb"], "lb")),
             notes=str(row["notes"]),
         )
 

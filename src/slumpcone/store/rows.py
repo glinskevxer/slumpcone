@@ -13,6 +13,10 @@ half open interval to the start of the next day, which is what was meant.
 The band pack and unpack were duplicated in two repositories with the same
 three-column layout and the same ``None`` handling, which is one edit away from
 diverging.
+
+And the nullable readers, which say the same thing fifty two times: a column
+that is NULL comes back as ``None`` rather than as the string ``"None"``, which
+is what ``str(row[column])`` quietly produces.
 """
 
 from __future__ import annotations
@@ -20,7 +24,9 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from slumpcone.percent import Percent
 from slumpcone.tolerance import Band
+from slumpcone.units.quantity import Quantity
 
 
 def day_range(start: date, end: date) -> tuple[str, str]:
@@ -64,3 +70,22 @@ def text(value: Any) -> str | None:
 def number(value: Any) -> float | None:
     """A nullable numeric column as a float."""
     return None if value is None else float(value)
+
+
+def whole(value: Any) -> int | None:
+    """A nullable integer column."""
+    return None if value is None else int(value)
+
+
+def percent(value: Any) -> Percent | None:
+    """A nullable percentage column."""
+    return None if value is None else Percent(float(value))
+
+
+def quantity(value: Any, unit: str) -> Quantity | None:
+    """A nullable numeric column as a quantity in a known unit.
+
+    The unit belongs to the column, not to the row, which is why it is an
+    argument here rather than a second column in the schema.
+    """
+    return None if value is None else Quantity(float(value), unit)

@@ -15,6 +15,7 @@ from slumpcone.identity import normalize_code
 from slumpcone.project.order import Order, OrderProgress, OrderStatus, progress_of
 from slumpcone.store.batch_repo import BatchRepository
 from slumpcone.store.db import Database
+from slumpcone.store.rows import quantity, text
 from slumpcone.units.quantity import Quantity
 
 
@@ -25,12 +26,12 @@ def _from_row(row: sqlite3.Row) -> Order:
         class_code=str(row["class_code"]),
         volume=Quantity(float(row["volume_yd3"]), "yd3"),
         placement_date=date.fromisoformat(str(row["placement_date"])),
-        mix_code=None if row["mix_code"] is None else str(row["mix_code"]),
+        mix_code=text(row["mix_code"]),
         start_time=(
             None if row["start_time"] is None else time.fromisoformat(str(row["start_time"]))
         ),
-        rate=None if row["rate_yd3"] is None else Quantity(float(row["rate_yd3"]), "yd3"),
-        placement=None if row["placement"] is None else str(row["placement"]),
+        rate=quantity(row["rate_yd3"], "yd3"),
+        placement=text(row["placement"]),
         status=OrderStatus(str(row["status"])),
         notes=str(row["notes"]),
     )

@@ -23,9 +23,8 @@ from slumpcone.materials.kinds import (
     WaterSource,
 )
 from slumpcone.materials.spec import Material
-from slumpcone.percent import Percent
 from slumpcone.store.db import Database
-from slumpcone.units.quantity import Quantity
+from slumpcone.store.rows import number, percent, quantity, text
 from slumpcone.units.rate import MassPerVolume
 
 _COLUMNS = (
@@ -96,24 +95,12 @@ def _from_row(row: sqlite3.Row) -> Material:
         code=str(row["code"]),
         name=str(row["name"]),
         material_class=MaterialClass(str(row["material_class"])),
-        supplier=None if row["supplier"] is None else str(row["supplier"]),
-        source=None if row["source"] is None else str(row["source"]),
-        specific_gravity=(
-            None if row["specific_gravity"] is None else float(row["specific_gravity"])
-        ),
-        absorption=(
-            None
-            if row["absorption_percent"] is None
-            else Percent(float(row["absorption_percent"]))
-        ),
-        fineness_modulus=(
-            None if row["fineness_modulus"] is None else float(row["fineness_modulus"])
-        ),
-        nominal_max_size=(
-            None
-            if row["nominal_max_size_mm"] is None
-            else Quantity(float(row["nominal_max_size_mm"]), "mm")
-        ),
+        supplier=text(row["supplier"]),
+        source=text(row["source"]),
+        specific_gravity=(number(row["specific_gravity"])),
+        absorption=(percent(row["absorption_percent"])),
+        fineness_modulus=(number(row["fineness_modulus"])),
+        nominal_max_size=(quantity(row["nominal_max_size_mm"], "mm")),
         dry_rodded_unit_weight=(
             None
             if row["dry_rodded_lb_per_ft3"] is None
@@ -124,18 +111,12 @@ def _from_row(row: sqlite3.Row) -> Material:
         admixture_type=(
             None if row["admixture_type"] is None else AdmixtureType(str(row["admixture_type"]))
         ),
-        solids_content=(
-            None if row["solids_percent"] is None else Percent(float(row["solids_percent"]))
-        ),
+        solids_content=(percent(row["solids_percent"])),
         water_source=(
             None if row["water_source"] is None else WaterSource(str(row["water_source"]))
         ),
-        chloride_content=(
-            None if row["chloride_percent"] is None else Percent(float(row["chloride_percent"]))
-        ),
-        alkali_content=(
-            None if row["alkali_percent"] is None else Percent(float(row["alkali_percent"]))
-        ),
+        chloride_content=(percent(row["chloride_percent"])),
+        alkali_content=(percent(row["alkali_percent"])),
         notes=str(row["notes"]),
     )
 
@@ -147,8 +128,8 @@ def _certificate_from_row(row: sqlite3.Row) -> Certificate:
         reference=str(row["reference"]),
         issued=date.fromisoformat(str(row["issued"])),
         expires=date.fromisoformat(str(row["expires"])),
-        issuer=None if row["issuer"] is None else str(row["issuer"]),
-        lot=None if row["lot"] is None else str(row["lot"]),
+        issuer=text(row["issuer"]),
+        lot=text(row["lot"]),
     )
 
 

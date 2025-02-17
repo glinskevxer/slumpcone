@@ -13,11 +13,10 @@ from datetime import date, datetime
 
 from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code
-from slumpcone.percent import Percent
 from slumpcone.plant.inventory import InventoryLedger, Movement, MovementKind
 from slumpcone.plant.receipt import Receipt
 from slumpcone.store.db import Database
-from slumpcone.store.rows import day_range
+from slumpcone.store.rows import day_range, percent, text
 from slumpcone.units.quantity import Quantity
 
 
@@ -29,14 +28,10 @@ def _receipt_from_row(row: sqlite3.Row) -> Receipt:
         material_code=str(row["material_code"]),
         received_at=datetime.fromisoformat(str(row["received_at"])),
         quantity=Quantity(float(row["quantity_lb"]), "lb"),
-        supplier=None if row["supplier"] is None else str(row["supplier"]),
-        supplier_ticket=(
-            None if row["supplier_ticket"] is None else str(row["supplier_ticket"])
-        ),
-        certificate_reference=(
-            None if row["certificate_reference"] is None else str(row["certificate_reference"])
-        ),
-        moisture=None if row["moisture_pct"] is None else Percent(float(row["moisture_pct"])),
+        supplier=text(row["supplier"]),
+        supplier_ticket=(text(row["supplier_ticket"])),
+        certificate_reference=(text(row["certificate_reference"])),
+        moisture=percent(row["moisture_pct"]),
         notes=str(row["notes"]),
     )
 
@@ -52,7 +47,7 @@ def _movement_from_row(row: sqlite3.Row) -> Movement:
         at=datetime.fromisoformat(str(row["at"])),
         kind=kind,
         quantity=Quantity(magnitude, "lb"),
-        reference=None if row["reference"] is None else str(row["reference"]),
+        reference=text(row["reference"]),
         notes=str(row["notes"]),
     )
 

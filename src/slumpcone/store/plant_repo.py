@@ -19,6 +19,7 @@ from slumpcone.plant.plant import MixingMethod, Plant
 from slumpcone.plant.scale import Scale
 from slumpcone.plant.silo import Silo
 from slumpcone.store.db import Database
+from slumpcone.store.rows import day, quantity, text
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.system import UnitSystem
 
@@ -42,9 +43,7 @@ def _silo_from_row(row: sqlite3.Row) -> Silo:
         material_code=str(row["material_code"]),
         capacity=Quantity(float(row["capacity_lb"]), "lb"),
         level=Quantity(float(row["level_lb"]), "lb"),
-        low_level=(
-            None if row["low_level_lb"] is None else Quantity(float(row["low_level_lb"]), "lb")
-        ),
+        low_level=(quantity(row["low_level_lb"], "lb")),
     )
 
 
@@ -135,17 +134,9 @@ class PlantRepository:
             mixing_method=MixingMethod(str(row["mixing_method"])),
             water_source=WaterSource(str(row["water_source"])),
             scales=tuple(_scale_from_row(scale_row) for scale_row in scales),
-            max_load=(
-                None
-                if row["max_load_yd3"] is None
-                else Quantity(float(row["max_load_yd3"]), "yd3")
-            ),
-            certification_expires=(
-                None
-                if row["certification_expires"] is None
-                else date.fromisoformat(str(row["certification_expires"]))
-            ),
-            location=None if row["location"] is None else str(row["location"]),
+            max_load=(quantity(row["max_load_yd3"], "yd3")),
+            certification_expires=(day(row["certification_expires"])),
+            location=text(row["location"]),
             notes=str(row["notes"]),
         )
 

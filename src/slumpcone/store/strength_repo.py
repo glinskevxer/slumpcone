@@ -18,6 +18,7 @@ from datetime import date, datetime
 from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.store.db import Database
+from slumpcone.store.rows import text
 from slumpcone.strength.breaks import BreakResult, FractureType
 from slumpcone.strength.specimen import (
     CureCondition,
@@ -53,7 +54,7 @@ def _break_from_row(row: sqlite3.Row) -> BreakResult:
         length=Quantity(float(row["length_in"]), "in"),
         max_load=Quantity(float(row["max_load_lbf"]), "lbf"),
         fracture=FractureType(str(row["fracture"])),
-        tested_by=None if row["tested_by"] is None else str(row["tested_by"]),
+        tested_by=text(row["tested_by"]),
         notes=str(row["notes"]),
     )
 
@@ -196,8 +197,8 @@ class StrengthRepository:
             size=SpecimenSize(str(row["size"])),
             cure=CureCondition(str(row["cure"])),
             purpose=SpecimenPurpose(str(row["purpose"])),
-            ticket_number=None if row["ticket_number"] is None else str(row["ticket_number"]),
-            project=None if row["project"] is None else str(row["project"]),
+            ticket_number=text(row["ticket_number"]),
+            project=text(row["project"]),
         )
 
     def tests_for_mix(self, mix_code: str) -> tuple[StrengthTest, ...]:

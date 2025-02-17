@@ -17,7 +17,7 @@ from slumpcone.project.project import Project, SpecifiedClass
 from slumpcone.project.submittal import Submittal, SubmittalBasis, SubmittalStatus
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
-from slumpcone.store.rows import band_columns, band_from
+from slumpcone.store.rows import band_columns, band_from, day, number, quantity, text
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.system import UnitSystem
 
@@ -29,30 +29,18 @@ def _class_from_row(row: sqlite3.Row) -> SpecifiedClass:
         test_age_days=int(row["test_age_days"]),
         exposure=ExposureSet.parse(str(row["exposure"])),
         slump_band=band_from(
-            None if row["slump_target_in"] is None else float(row["slump_target_in"]),
-            None if row["slump_minus_in"] is None else float(row["slump_minus_in"]),
-            None if row["slump_plus_in"] is None else float(row["slump_plus_in"]),
+            number(row["slump_target_in"]),
+            number(row["slump_minus_in"]),
+            number(row["slump_plus_in"]),
         ),
         air_band=band_from(
-            None if row["air_target_pct"] is None else float(row["air_target_pct"]),
-            None if row["air_minus_pct"] is None else float(row["air_minus_pct"]),
-            None if row["air_plus_pct"] is None else float(row["air_plus_pct"]),
+            number(row["air_target_pct"]),
+            number(row["air_minus_pct"]),
+            number(row["air_plus_pct"]),
         ),
-        max_water_cementitious=(
-            None
-            if row["max_water_cementitious"] is None
-            else float(row["max_water_cementitious"])
-        ),
-        min_cementitious=(
-            None
-            if row["min_cementitious_lb"] is None
-            else Quantity(float(row["min_cementitious_lb"]), "lb")
-        ),
-        nominal_max_size=(
-            None
-            if row["nominal_max_size_mm"] is None
-            else Quantity(float(row["nominal_max_size_mm"]), "mm")
-        ),
+        max_water_cementitious=(number(row["max_water_cementitious"])),
+        min_cementitious=(quantity(row["min_cementitious_lb"], "lb")),
+        nominal_max_size=(quantity(row["nominal_max_size_mm"], "mm")),
         description=str(row["description"]),
     )
 
@@ -67,18 +55,10 @@ def _submittal_from_row(row: sqlite3.Row) -> Submittal:
         submitted_on=date.fromisoformat(str(row["submitted_on"])),
         basis=SubmittalBasis(str(row["basis"])),
         status=SubmittalStatus(str(row["status"])),
-        required_average=(
-            None
-            if row["required_average_psi"] is None
-            else Quantity(float(row["required_average_psi"]), "psi")
-        ),
-        decided_on=(
-            None if row["decided_on"] is None else date.fromisoformat(str(row["decided_on"]))
-        ),
-        expires_on=(
-            None if row["expires_on"] is None else date.fromisoformat(str(row["expires_on"]))
-        ),
-        reviewer=None if row["reviewer"] is None else str(row["reviewer"]),
+        required_average=(quantity(row["required_average_psi"], "psi")),
+        decided_on=(day(row["decided_on"])),
+        expires_on=(day(row["expires_on"])),
+        reviewer=text(row["reviewer"]),
         comments=str(row["comments"]),
     )
 
@@ -163,19 +143,11 @@ class ProjectRepository:
             code=str(row["code"]),
             name=str(row["name"]),
             classes=tuple(_class_from_row(entry) for entry in classes),
-            owner=None if row["owner"] is None else str(row["owner"]),
-            specifier=None if row["specifier"] is None else str(row["specifier"]),
+            owner=text(row["owner"]),
+            specifier=text(row["specifier"]),
             unit_system=UnitSystem(str(row["unit_system"])),
-            started_on=(
-                None
-                if row["started_on"] is None
-                else date.fromisoformat(str(row["started_on"]))
-            ),
-            finished_on=(
-                None
-                if row["finished_on"] is None
-                else date.fromisoformat(str(row["finished_on"]))
-            ),
+            started_on=(day(row["started_on"])),
+            finished_on=(day(row["finished_on"])),
             notes=str(row["notes"]),
         )
 
