@@ -23,6 +23,7 @@ from slumpcone.store.batch_repo import BatchRepository
 from slumpcone.store.db import Database
 from slumpcone.store.delivery_repo import DeliveryRepository
 from slumpcone.store.fresh_repo import FreshTestRepository
+from slumpcone.store.hardened_repo import HardenedRepository
 from slumpcone.store.ingest_repo import IngestRepository
 from slumpcone.store.inventory_repo import InventoryRepository
 from slumpcone.store.materials_repo import MaterialRepository
@@ -51,6 +52,8 @@ COUNTED_TABLES = (
     "ingest_run",
     "material_price",
     "audit_event",
+    "flexural_break",
+    "concrete_core",
 )
 
 
@@ -98,6 +101,7 @@ class Register:
         self.ingest = IngestRepository(database)
         self.prices = PricingRepository(database)
         self.audit = AuditLog(database)
+        self.hardened = HardenedRepository(database)
 
     @classmethod
     def open(cls, path: str | Path) -> Register:
