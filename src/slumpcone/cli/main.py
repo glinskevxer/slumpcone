@@ -23,6 +23,7 @@ from slumpcone.cli.delivery_cmds import delivery_group
 from slumpcone.cli.demo_cmds import demo_group
 from slumpcone.cli.export_cmds import export_group
 from slumpcone.cli.field_cmds import field_group
+from slumpcone.cli.hardened_cmds import beam_group, core_group
 from slumpcone.cli.import_cmds import import_group
 from slumpcone.cli.inventory_cmds import inventory_group
 from slumpcone.cli.lab_cmds import lab_group
@@ -68,6 +69,8 @@ cli.add_command(price_group)
 cli.add_command(export_group)
 cli.add_command(audit_group)
 cli.add_command(control_group)
+cli.add_command(beam_group)
+cli.add_command(core_group)
 cli.add_command(demo_group)
 
 

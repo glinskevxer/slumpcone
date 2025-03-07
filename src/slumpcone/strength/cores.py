@@ -43,6 +43,15 @@ class CoreCondition(Enum):
     def __str__(self) -> str:
         return self.value
 
+    @classmethod
+    def parse(cls, text: str) -> CoreCondition:
+        """Read a conditioning off a core report."""
+        key = text.strip().lower().replace("_", " ")
+        for member in cls:
+            if member.value == key:
+                return member
+        raise ValidationError(f"unknown core condition {text!r}", field="condition")
+
     @property
     def matches_service(self) -> bool:
         """True when the conditioning reflects how the structure will be used.

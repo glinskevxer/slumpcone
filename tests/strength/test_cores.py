@@ -41,6 +41,17 @@ class CaseCondition:
     def test_it_prints_its_own_value(self) -> None:
         assert str(CoreCondition.AIR_DRIED) == "air dried"
 
+    def test_parse(self) -> None:
+        assert CoreCondition.parse("soaked") is CoreCondition.SOAKED
+        assert CoreCondition.parse("AIR_DRIED") is CoreCondition.AIR_DRIED
+        assert CoreCondition.parse(" as received ") is CoreCondition.AS_RECEIVED
+
+    def test_parse_refuses_the_unknown(self) -> None:
+        import pytest as _pytest
+
+        with _pytest.raises(ValidationError, match="core condition"):
+            CoreCondition.parse("baked")
+
 
 class CaseCore:
     def test_the_dimensions_are_checked(self) -> None:
