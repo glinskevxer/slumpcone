@@ -28,6 +28,7 @@ from slumpcone.cli.import_cmds import import_group
 from slumpcone.cli.inventory_cmds import inventory_group
 from slumpcone.cli.lab_cmds import lab_group
 from slumpcone.cli.material_cmds import material_group
+from slumpcone.cli.maturity_cmds import maturity_group
 from slumpcone.cli.mix_cmds import mix_group
 from slumpcone.cli.plant_cmds import plant_group
 from slumpcone.cli.price_cmds import price_group
@@ -71,6 +72,7 @@ cli.add_command(audit_group)
 cli.add_command(control_group)
 cli.add_command(beam_group)
 cli.add_command(core_group)
+cli.add_command(maturity_group)
 cli.add_command(demo_group)
 
 
