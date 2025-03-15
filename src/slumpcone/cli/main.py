@@ -15,6 +15,7 @@ from pathlib import Path
 import click
 
 from slumpcone import __version__
+from slumpcone.cli.account_cmds import account_group
 from slumpcone.cli.audit_cmds import audit_group
 from slumpcone.cli.batch_cmds import batch_group
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
@@ -73,6 +74,7 @@ cli.add_command(control_group)
 cli.add_command(beam_group)
 cli.add_command(core_group)
 cli.add_command(maturity_group)
+cli.add_command(account_group)
 cli.add_command(demo_group)
 
 
