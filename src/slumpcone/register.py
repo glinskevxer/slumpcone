@@ -18,6 +18,7 @@ from datetime import date
 from pathlib import Path
 from types import TracebackType
 
+from slumpcone.store.account_repo import AccountRepository
 from slumpcone.store.audit import AuditLog
 from slumpcone.store.batch_repo import BatchRepository
 from slumpcone.store.db import Database
@@ -57,6 +58,7 @@ COUNTED_TABLES = (
     "concrete_core",
     "maturity_curve",
     "temperature_log",
+    "account",
 )
 
 
@@ -106,6 +108,7 @@ class Register:
         self.audit = AuditLog(database)
         self.hardened = HardenedRepository(database)
         self.maturity = MaturityRepository(database)
+        self.accounts = AccountRepository(database)
 
     @classmethod
     def open(cls, path: str | Path) -> Register:

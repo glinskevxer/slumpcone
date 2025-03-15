@@ -63,6 +63,7 @@ class CaseRepositories:
             "audit",
             "hardened",
             "maturity",
+            "accounts",
         ):
             assert getattr(register, name) is not None
 
