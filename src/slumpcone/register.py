@@ -27,6 +27,7 @@ from slumpcone.store.fresh_repo import FreshTestRepository
 from slumpcone.store.hardened_repo import HardenedRepository
 from slumpcone.store.ingest_repo import IngestRepository
 from slumpcone.store.inventory_repo import InventoryRepository
+from slumpcone.store.invoice_repo import InvoiceRepository
 from slumpcone.store.materials_repo import MaterialRepository
 from slumpcone.store.maturity_repo import MaturityRepository
 from slumpcone.store.migrations import current_version, load_migrations, migrate, verify
@@ -59,6 +60,7 @@ COUNTED_TABLES = (
     "maturity_curve",
     "temperature_log",
     "account",
+    "invoice",
 )
 
 
@@ -109,6 +111,7 @@ class Register:
         self.hardened = HardenedRepository(database)
         self.maturity = MaturityRepository(database)
         self.accounts = AccountRepository(database)
+        self.invoices = InvoiceRepository(database)
 
     @classmethod
     def open(cls, path: str | Path) -> Register:
