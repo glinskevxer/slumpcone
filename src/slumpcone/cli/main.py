@@ -27,6 +27,7 @@ from slumpcone.cli.field_cmds import field_group
 from slumpcone.cli.hardened_cmds import beam_group, core_group
 from slumpcone.cli.import_cmds import import_group
 from slumpcone.cli.inventory_cmds import inventory_group
+from slumpcone.cli.invoice_cmds import invoice_group
 from slumpcone.cli.lab_cmds import lab_group
 from slumpcone.cli.material_cmds import material_group
 from slumpcone.cli.maturity_cmds import maturity_group
@@ -75,6 +76,7 @@ cli.add_command(beam_group)
 cli.add_command(core_group)
 cli.add_command(maturity_group)
 cli.add_command(account_group)
+cli.add_command(invoice_group)
 cli.add_command(demo_group)
 
 
