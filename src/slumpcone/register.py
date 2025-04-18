@@ -38,6 +38,7 @@ from slumpcone.store.plant_repo import PlantRepository
 from slumpcone.store.pricing_repo import PricingRepository
 from slumpcone.store.project_repo import ProjectRepository
 from slumpcone.store.strength_repo import StrengthRepository
+from slumpcone.store.uniformity_repo import UniformityRepository
 
 # The tables a health check counts rows in, in the order a report reads them.
 COUNTED_TABLES = (
@@ -60,6 +61,7 @@ COUNTED_TABLES = (
     "concrete_core",
     "maturity_curve",
     "bleed_test",
+    "uniformity_test",
     "temperature_log",
     "account",
     "invoice",
@@ -113,6 +115,7 @@ class Register:
         self.hardened = HardenedRepository(database)
         self.maturity = MaturityRepository(database)
         self.bleeding = BleedingRepository(database)
+        self.uniformity = UniformityRepository(database)
         self.accounts = AccountRepository(database)
         self.invoices = InvoiceRepository(database)
 
