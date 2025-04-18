@@ -21,6 +21,7 @@ from types import TracebackType
 from slumpcone.store.account_repo import AccountRepository
 from slumpcone.store.audit import AuditLog
 from slumpcone.store.batch_repo import BatchRepository
+from slumpcone.store.bleeding_repo import BleedingRepository
 from slumpcone.store.db import Database
 from slumpcone.store.delivery_repo import DeliveryRepository
 from slumpcone.store.fresh_repo import FreshTestRepository
@@ -58,6 +59,7 @@ COUNTED_TABLES = (
     "flexural_break",
     "concrete_core",
     "maturity_curve",
+    "bleed_test",
     "temperature_log",
     "account",
     "invoice",
@@ -110,6 +112,7 @@ class Register:
         self.audit = AuditLog(database)
         self.hardened = HardenedRepository(database)
         self.maturity = MaturityRepository(database)
+        self.bleeding = BleedingRepository(database)
         self.accounts = AccountRepository(database)
         self.invoices = InvoiceRepository(database)
 
