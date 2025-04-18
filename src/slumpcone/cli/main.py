@@ -18,6 +18,7 @@ from slumpcone import __version__
 from slumpcone.cli.account_cmds import account_group
 from slumpcone.cli.audit_cmds import audit_group
 from slumpcone.cli.batch_cmds import batch_group
+from slumpcone.cli.bleed_cmds import bleed_group
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
 from slumpcone.cli.control_cmds import control_group
 from slumpcone.cli.delivery_cmds import delivery_group
@@ -77,6 +78,7 @@ cli.add_command(core_group)
 cli.add_command(maturity_group)
 cli.add_command(account_group)
 cli.add_command(invoice_group)
+cli.add_command(bleed_group)
 cli.add_command(demo_group)
 
 
