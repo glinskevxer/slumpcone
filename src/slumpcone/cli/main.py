@@ -33,6 +33,7 @@ from slumpcone.cli.lab_cmds import lab_group
 from slumpcone.cli.material_cmds import material_group
 from slumpcone.cli.maturity_cmds import maturity_group
 from slumpcone.cli.mix_cmds import mix_group
+from slumpcone.cli.mixer_cmds import mixer_group
 from slumpcone.cli.plant_cmds import plant_group
 from slumpcone.cli.price_cmds import price_group
 from slumpcone.cli.project_cmds import project_group
@@ -79,6 +80,7 @@ cli.add_command(maturity_group)
 cli.add_command(account_group)
 cli.add_command(invoice_group)
 cli.add_command(bleed_group)
+cli.add_command(mixer_group)
 cli.add_command(demo_group)
 
 
