@@ -22,10 +22,10 @@ from slumpcone.batching.uniformity import (
     UniformitySample,
     compare,
 )
-from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code
 from slumpcone.percent import Percent
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing, require_one
 from slumpcone.store.rows import day_range, number
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.rate import MassPerVolume
@@ -72,10 +72,13 @@ class UniformityRepository:
                 "UNIFORMITY_SAME_SAMPLE", "the two samples have to be told apart by label"
             )
         key = (code, tested_on.isoformat())
-        if self._db.query_one(
-            "SELECT 1 FROM uniformity_test WHERE mixer = ? AND tested_on = ?", key
-        ):
-            raise ConflictError("uniformity test", f"{code} on {tested_on}")
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM uniformity_test WHERE mixer = ? AND tested_on = ?",
+            key,
+            "uniformity test",
+            f"{code} on {tested_on}",
+        )
         with self._db.transaction():
             self._db.execute(
                 "INSERT INTO uniformity_test (mixer, tested_on, plant_code, "
@@ -109,11 +112,13 @@ class UniformityRepository:
         """One test, with both samples."""
         code = normalize_code(mixer, field="mixer")
         key = (code, tested_on.isoformat())
-        row = self._db.query_one(
-            "SELECT * FROM uniformity_test WHERE mixer = ? AND tested_on = ?", key
+        row = require_one(
+            self._db,
+            "SELECT * FROM uniformity_test WHERE mixer = ? AND tested_on = ?",
+            key,
+            "uniformity test",
+            f"{code} on {tested_on}",
         )
-        if row is None:
-            raise NotFoundError("uniformity test", f"{code} on {tested_on}")
         samples = self._db.query(
             "SELECT * FROM uniformity_sample WHERE mixer = ? AND tested_on = ? ORDER BY label",
             key,

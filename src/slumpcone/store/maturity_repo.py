@@ -16,6 +16,7 @@ from datetime import date, datetime
 from slumpcone.errors import ConflictError, NotFoundError, ValidationError
 from slumpcone.identity import normalize_code, normalize_name
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing
 from slumpcone.store.rows import day_range
 from slumpcone.strength.maturity import (
     MaturityCurve,
@@ -37,11 +38,13 @@ class MaturityRepository:
     ) -> MaturityCurve:
         """File a curve under a name. Refuses to overwrite one."""
         label = normalize_name(name, field="curve_name")
-        if self._db.query_one(
+        refuse_existing(
+            self._db,
             "SELECT 1 FROM maturity_curve WHERE mix_code = ? AND name = ?",
             (curve.mix_code, label),
-        ):
-            raise ConflictError("maturity curve", f"{curve.mix_code} {label}")
+            "maturity curve",
+            f"{curve.mix_code} {label}",
+        )
         with self._db.transaction():
             self._db.execute(
                 "INSERT INTO maturity_curve (mix_code, name, fitted_on, notes) "
@@ -96,11 +99,13 @@ class MaturityRepository:
         """File one logger reading. A repeat of the same moment is refused."""
         code = normalize_code(sensor, field="sensor")
         where = normalize_name(placement, field="placement")
-        if self._db.query_one(
+        refuse_existing(
+            self._db,
             "SELECT 1 FROM temperature_log WHERE sensor = ? AND at = ?",
             (code, reading.at.isoformat()),
-        ):
-            raise ConflictError("reading", f"{code} at {reading.at.isoformat()}")
+            "reading",
+            f"{code} at {reading.at.isoformat()}",
+        )
         self._db.execute(
             "INSERT INTO temperature_log (sensor, placement, at, temperature_f) "
             "VALUES (?, ?, ?, ?)",

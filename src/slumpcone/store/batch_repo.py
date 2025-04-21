@@ -16,6 +16,7 @@ from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.materials.kinds import MaterialClass
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import day_range, quantity, text, whole
 from slumpcone.units.quantity import Quantity
 
@@ -137,9 +138,9 @@ class BatchRepository:
     def get(self, number: str) -> BatchTicket:
         """One ticket by serial number."""
         key = normalize_ticket_number(number)
-        row = self._db.query_one("SELECT * FROM batch_ticket WHERE number = ?", (key,))
-        if row is None:
-            raise NotFoundError("ticket", key)
+        row = require_one(
+            self._db, "SELECT * FROM batch_ticket WHERE number = ?", (key,), "ticket", key
+        )
         return self._from_row(row)
 
     def between(self, start: date, end: date) -> tuple[BatchTicket, ...]:

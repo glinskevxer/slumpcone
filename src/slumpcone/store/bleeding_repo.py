@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import date
 
-from slumpcone.errors import ConflictError, NotFoundError
+from slumpcone.errors import ConflictError
 from slumpcone.fresh.bleeding import (
     BleedReading,
     BleedTest,
@@ -23,6 +23,7 @@ from slumpcone.fresh.bleeding import (
 )
 from slumpcone.identity import normalize_code
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing, require_one
 from slumpcone.store.rows import day_range, whole
 from slumpcone.units.quantity import Quantity
 
@@ -76,11 +77,13 @@ class BleedingRepository:
         """One bleeding test, with its draws in the order they were taken."""
         number = normalize_code(ticket_number, field="ticket_number")
         key = (number, tested_on.isoformat())
-        row = self._db.query_one(
-            "SELECT * FROM bleed_test WHERE ticket_number = ? AND tested_on = ?", key
+        row = require_one(
+            self._db,
+            "SELECT * FROM bleed_test WHERE ticket_number = ? AND tested_on = ?",
+            key,
+            "bleed test",
+            f"{number} on {tested_on}",
         )
-        if row is None:
-            raise NotFoundError("bleed test", f"{number} on {tested_on}")
         draws = self._db.query(
             "SELECT * FROM bleed_reading WHERE ticket_number = ? AND tested_on = ? "
             "ORDER BY elapsed_minutes",
@@ -131,10 +134,13 @@ class BleedingRepository:
     ) -> ColumnSegregation:
         """File a column segregation result, with the eyeball index if one was taken."""
         key = (column.ticket_number, tested_on.isoformat())
-        if self._db.query_one(
-            "SELECT 1 FROM column_segregation WHERE ticket_number = ? AND tested_on = ?", key
-        ):
-            raise ConflictError("segregation test", f"{column.ticket_number} on {tested_on}")
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM column_segregation WHERE ticket_number = ? AND tested_on = ?",
+            key,
+            "segregation test",
+            f"{column.ticket_number} on {tested_on}",
+        )
         self._db.execute(
             "INSERT INTO column_segregation (ticket_number, tested_on, technician, "
             "top_coarse_lb, bottom_coarse_lb, visual_index) VALUES (?, ?, ?, ?, ?, ?)",
@@ -151,12 +157,13 @@ class BleedingRepository:
     def segregation(self, ticket_number: str, tested_on: date) -> ColumnSegregation:
         """One segregation result."""
         number = normalize_code(ticket_number, field="ticket_number")
-        row = self._db.query_one(
+        row = require_one(
+            self._db,
             "SELECT * FROM column_segregation WHERE ticket_number = ? AND tested_on = ?",
             (number, tested_on.isoformat()),
+            "segregation test",
+            f"{number} on {tested_on}",
         )
-        if row is None:
-            raise NotFoundError("segregation test", f"{number} on {tested_on}")
         return ColumnSegregation(
             number,
             Quantity(float(row["top_coarse_lb"]), "lb"),
@@ -166,13 +173,14 @@ class BleedingRepository:
     def visual_index(self, ticket_number: str, tested_on: date) -> VisualStability | None:
         """The index a technician assigned, if anybody did."""
         number = normalize_code(ticket_number, field="ticket_number")
-        row = self._db.query_one(
+        row = require_one(
+            self._db,
             "SELECT visual_index FROM column_segregation "
             "WHERE ticket_number = ? AND tested_on = ?",
             (number, tested_on.isoformat()),
+            "segregation test",
+            f"{number} on {tested_on}",
         )
-        if row is None:
-            raise NotFoundError("segregation test", f"{number} on {tested_on}")
         raw = whole(row["visual_index"])
         return None if raw is None else VisualStability(raw)
 

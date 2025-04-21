@@ -11,11 +11,11 @@ from __future__ import annotations
 import sqlite3
 from datetime import date, datetime
 
-from slumpcone.errors import ConflictError, NotFoundError
 from slumpcone.identity import normalize_code
 from slumpcone.plant.inventory import InventoryLedger, Movement, MovementKind
 from slumpcone.plant.receipt import Receipt
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing, require_one
 from slumpcone.store.rows import day_range, percent, text
 from slumpcone.units.quantity import Quantity
 
@@ -60,10 +60,13 @@ class InventoryRepository:
 
     def save_receipt(self, receipt: Receipt) -> Receipt:
         """File a receipt. Refuses a reference that is already on file."""
-        if self._db.query_one(
-            "SELECT 1 FROM material_receipt WHERE reference = ?", (receipt.reference,)
-        ):
-            raise ConflictError("receipt", receipt.reference)
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM material_receipt WHERE reference = ?",
+            (receipt.reference,),
+            "receipt",
+            receipt.reference,
+        )
         self._db.execute(
             "INSERT INTO material_receipt (reference, plant_code, silo_code, material_code, "
             "received_at, quantity_lb, supplier, supplier_ticket, certificate_reference, "
@@ -87,9 +90,13 @@ class InventoryRepository:
     def receipt(self, reference: str) -> Receipt:
         """One receipt by reference."""
         key = normalize_code(reference, field="receipt_reference")
-        row = self._db.query_one("SELECT * FROM material_receipt WHERE reference = ?", (key,))
-        if row is None:
-            raise NotFoundError("receipt", key)
+        row = require_one(
+            self._db,
+            "SELECT * FROM material_receipt WHERE reference = ?",
+            (key,),
+            "receipt",
+            key,
+        )
         return _receipt_from_row(row)
 
     def receipts_between(self, plant_code: str, start: date, end: date) -> tuple[Receipt, ...]:

@@ -15,6 +15,7 @@ from slumpcone.identity import normalize_code
 from slumpcone.project.order import Order, OrderProgress, OrderStatus, progress_of
 from slumpcone.store.batch_repo import BatchRepository
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import quantity, text
 from slumpcone.units.quantity import Quantity
 
@@ -73,9 +74,9 @@ class OrderRepository:
     def get(self, number: str) -> Order:
         """One order by number."""
         key = normalize_code(number, field="order_number")
-        row = self._db.query_one("SELECT * FROM concrete_order WHERE number = ?", (key,))
-        if row is None:
-            raise NotFoundError("order", key)
+        row = require_one(
+            self._db, "SELECT * FROM concrete_order WHERE number = ?", (key,), "order", key
+        )
         return _from_row(row)
 
     def for_project(self, project_code: str) -> tuple[Order, ...]:

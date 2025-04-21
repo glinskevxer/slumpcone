@@ -15,9 +15,10 @@ from __future__ import annotations
 import sqlite3
 from datetime import date, datetime
 
-from slumpcone.errors import ConflictError, NotFoundError
+from slumpcone.errors import NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing, require_one
 from slumpcone.store.rows import text
 from slumpcone.strength.breaks import BreakResult, FractureType
 from slumpcone.strength.specimen import (
@@ -81,8 +82,13 @@ class StrengthRepository:
     ) -> str:
         """Open a set of specimens against a mix design."""
         key = normalize_code(set_code, field="set_code")
-        if self._db.query_one("SELECT 1 FROM specimen_set WHERE set_code = ?", (key,)):
-            raise ConflictError("specimen set", key)
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM specimen_set WHERE set_code = ?",
+            (key,),
+            "specimen set",
+            key,
+        )
         self._db.execute(
             "INSERT INTO specimen_set (set_code, mix_code, mix_revision, ticket_number, "
             "project, size, cure, purpose, sampled_at, notes) "
@@ -108,8 +114,13 @@ class StrengthRepository:
             "SELECT 1 FROM specimen_set WHERE set_code = ?", (specimen.set_code,)
         ):
             raise NotFoundError("specimen set", specimen.set_code)
-        if self._db.query_one("SELECT 1 FROM specimen WHERE code = ?", (specimen.code,)):
-            raise ConflictError("specimen", specimen.code)
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM specimen WHERE code = ?",
+            (specimen.code,),
+            "specimen",
+            specimen.code,
+        )
         self._db.execute(
             "INSERT INTO specimen (code, set_code, ticket_number, cast_at, size, cure, "
             "purpose, age_days, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -133,10 +144,13 @@ class StrengthRepository:
             "SELECT 1 FROM specimen WHERE code = ?", (result.specimen_code,)
         ):
             raise NotFoundError("specimen", result.specimen_code)
-        if self._db.query_one(
-            "SELECT 1 FROM break_result WHERE specimen_code = ?", (result.specimen_code,)
-        ):
-            raise ConflictError("break", result.specimen_code)
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM break_result WHERE specimen_code = ?",
+            (result.specimen_code,),
+            "break",
+            result.specimen_code,
+        )
         self._db.execute(
             "INSERT INTO break_result (specimen_code, tested_at, age_days, diameter_one_in, "
             "diameter_two_in, length_in, max_load_lbf, fracture, tested_by, notes) "
@@ -184,9 +198,13 @@ class StrengthRepository:
     def strength_test(self, set_code: str) -> StrengthTest:
         """The strength test one set adds up to."""
         key = normalize_code(set_code, field="set_code")
-        row = self._db.query_one("SELECT * FROM specimen_set WHERE set_code = ?", (key,))
-        if row is None:
-            raise NotFoundError("specimen set", key)
+        row = require_one(
+            self._db,
+            "SELECT * FROM specimen_set WHERE set_code = ?",
+            (key,),
+            "specimen set",
+            key,
+        )
         breaks = self.breaks_in(key)
         if not breaks:
             raise NotFoundError("break for set", key)

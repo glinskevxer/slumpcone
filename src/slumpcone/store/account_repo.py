@@ -15,11 +15,12 @@ import sqlite3
 from datetime import date
 from decimal import Decimal
 
-from slumpcone.errors import ConflictError, NotFoundError
+from slumpcone.errors import NotFoundError
 from slumpcone.identity import normalize_code
 from slumpcone.money import Money
 from slumpcone.sales.account import Account, AccountStatus, PaymentTerms
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing, require_one
 from slumpcone.store.rows import day, text
 
 
@@ -81,9 +82,9 @@ class AccountRepository:
     def get(self, code: str) -> Account:
         """One account by code."""
         key = normalize_code(code, field="account_code")
-        row = self._db.query_one("SELECT * FROM account WHERE code = ?", (key,))
-        if row is None:
-            raise NotFoundError("account", key)
+        row = require_one(
+            self._db, "SELECT * FROM account WHERE code = ?", (key,), "account", key
+        )
         return _from_row(row)
 
     def all(self) -> tuple[Account, ...]:
@@ -116,12 +117,14 @@ class AccountRepository:
         mix = normalize_code(mix_code, field="mix_code")
         self.get(account)
         start = None if effective_from is None else effective_from.isoformat()
-        if self._db.query_one(
+        refuse_existing(
+            self._db,
             "SELECT 1 FROM account_quote WHERE account_code = ? AND mix_code = ? "
             "AND effective_from IS ?",
             (account, mix, start),
-        ):
-            raise ConflictError("quote", f"{account} {mix} from {start or 'always'}")
+            "quote",
+            f"{account} {mix} from {start or 'always'}",
+        )
         self._db.execute(
             "INSERT INTO account_quote (account_code, mix_code, currency, amount, "
             "effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?)",

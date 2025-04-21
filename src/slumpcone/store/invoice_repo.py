@@ -16,7 +16,7 @@ import sqlite3
 from datetime import date
 from decimal import Decimal
 
-from slumpcone.errors import NotFoundError, RuleViolationError
+from slumpcone.errors import RuleViolationError
 from slumpcone.identity import normalize_code
 from slumpcone.money import Money
 from slumpcone.percent import Percent
@@ -24,6 +24,7 @@ from slumpcone.sales.account import PaymentTerms
 from slumpcone.sales.charges import AppliedCharge, ChargeKind
 from slumpcone.sales.invoice import Invoice, InvoiceLine, InvoiceStatus, Payment
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import day_range, text
 from slumpcone.units.quantity import Quantity
 
@@ -182,9 +183,9 @@ class InvoiceRepository:
     def get(self, number: str) -> Invoice:
         """One invoice by number."""
         key = normalize_code(number, field="invoice_number")
-        row = self._db.query_one("SELECT * FROM invoice WHERE number = ?", (key,))
-        if row is None:
-            raise NotFoundError("invoice", key)
+        row = require_one(
+            self._db, "SELECT * FROM invoice WHERE number = ?", (key,), "invoice", key
+        )
         return self._from_row(row)
 
     def for_account(self, account_code: str) -> tuple[Invoice, ...]:

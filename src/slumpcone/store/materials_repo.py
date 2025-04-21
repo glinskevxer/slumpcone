@@ -24,6 +24,7 @@ from slumpcone.materials.kinds import (
 )
 from slumpcone.materials.spec import Material
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import number, percent, quantity, text
 from slumpcone.units.rate import MassPerVolume
 
@@ -160,9 +161,9 @@ class MaterialRepository:
     def get(self, code: str) -> Material:
         """The material filed under ``code``."""
         key = normalize_code(code, field="material_code")
-        row = self._db.query_one("SELECT * FROM material WHERE code = ?", (key,))
-        if row is None:
-            raise NotFoundError("material", key)
+        row = require_one(
+            self._db, "SELECT * FROM material WHERE code = ?", (key,), "material", key
+        )
         return _from_row(row)
 
     def find(self, code: str) -> Material | None:

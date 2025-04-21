@@ -17,6 +17,7 @@ from slumpcone.project.project import Project, SpecifiedClass
 from slumpcone.project.submittal import Submittal, SubmittalBasis, SubmittalStatus
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import band_columns, band_from, day, number, quantity, text
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.system import UnitSystem
@@ -133,9 +134,9 @@ class ProjectRepository:
     def get(self, code: str) -> Project:
         """One project with its classes."""
         key = normalize_code(code, field="project_code")
-        row = self._db.query_one("SELECT * FROM project WHERE code = ?", (key,))
-        if row is None:
-            raise NotFoundError("project", key)
+        row = require_one(
+            self._db, "SELECT * FROM project WHERE code = ?", (key,), "project", key
+        )
         classes = self._db.query(
             "SELECT * FROM project_class WHERE project_code = ? ORDER BY code", (key,)
         )
@@ -208,9 +209,9 @@ class ProjectRepository:
     def submittal(self, reference: str) -> Submittal:
         """One submittal by reference."""
         key = normalize_code(reference, field="submittal_reference")
-        row = self._db.query_one("SELECT * FROM submittal WHERE reference = ?", (key,))
-        if row is None:
-            raise NotFoundError("submittal", key)
+        row = require_one(
+            self._db, "SELECT * FROM submittal WHERE reference = ?", (key,), "submittal", key
+        )
         return _submittal_from_row(row)
 
     def submittals_for(self, project_code: str) -> tuple[Submittal, ...]:

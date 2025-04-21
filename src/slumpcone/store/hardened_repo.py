@@ -16,9 +16,10 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime
 
-from slumpcone.errors import ConflictError, NotFoundError
+from slumpcone.errors import NotFoundError
 from slumpcone.identity import normalize_code
 from slumpcone.store.db import Database
+from slumpcone.store.guards import refuse_existing, require_one
 from slumpcone.strength.cores import Core, CoreCondition, CoreInvestigation
 from slumpcone.strength.flexural import FlexuralBreak
 from slumpcone.units.quantity import Quantity
@@ -62,10 +63,13 @@ class HardenedRepository:
         notes: str = "",
     ) -> FlexuralBreak:
         """File one beam. A beam breaks once."""
-        if self._db.query_one(
-            "SELECT 1 FROM flexural_break WHERE specimen_code = ?", (beam.specimen_code,)
-        ):
-            raise ConflictError("beam", beam.specimen_code)
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM flexural_break WHERE specimen_code = ?",
+            (beam.specimen_code,),
+            "beam",
+            beam.specimen_code,
+        )
         self._db.execute(
             "INSERT INTO flexural_break (specimen_code, set_code, mix_code, tested_at, "
             "age_days, span_in, width_in, depth_in, max_load_lbf, "
@@ -89,9 +93,13 @@ class HardenedRepository:
     def beam(self, specimen_code: str) -> FlexuralBreak:
         """One beam by specimen code."""
         key = normalize_code(specimen_code, field="specimen_code")
-        row = self._db.query_one("SELECT * FROM flexural_break WHERE specimen_code = ?", (key,))
-        if row is None:
-            raise NotFoundError("beam", key)
+        row = require_one(
+            self._db,
+            "SELECT * FROM flexural_break WHERE specimen_code = ?",
+            (key,),
+            "beam",
+            key,
+        )
         return _beam_from_row(row)
 
     def beams_in(self, set_code: str) -> tuple[FlexuralBreak, ...]:
@@ -121,8 +129,13 @@ class HardenedRepository:
         notes: str = "",
     ) -> Core:
         """File one core against a location and the strength it is judged on."""
-        if self._db.query_one("SELECT 1 FROM concrete_core WHERE code = ?", (core.code,)):
-            raise ConflictError("core", core.code)
+        refuse_existing(
+            self._db,
+            "SELECT 1 FROM concrete_core WHERE code = ?",
+            (core.code,),
+            "core",
+            core.code,
+        )
         self._db.execute(
             "INSERT INTO concrete_core (code, location, specified_psi, taken_at, "
             "diameter_in, length_in, max_load_lbf, condition, has_reinforcement, notes) "
@@ -145,9 +158,9 @@ class HardenedRepository:
     def core(self, code: str) -> Core:
         """One core by code."""
         key = normalize_code(code, field="core_code")
-        row = self._db.query_one("SELECT * FROM concrete_core WHERE code = ?", (key,))
-        if row is None:
-            raise NotFoundError("core", key)
+        row = require_one(
+            self._db, "SELECT * FROM concrete_core WHERE code = ?", (key,), "core", key
+        )
         return _core_from_row(row)
 
     def locations(self) -> tuple[str, ...]:

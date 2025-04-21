@@ -18,6 +18,7 @@ from slumpcone.mixdesign.proportions import AdmixtureCharge, Charge, Proportions
 from slumpcone.percent import Percent
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import band_columns, band_from, number, text
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.rate import MassPerVolume
@@ -155,21 +156,25 @@ class MixDesignRepository:
     def get(self, code: str, revision: int) -> MixDesign:
         """One revision by code and number."""
         key = normalize_code(code, field="mix_code")
-        row = self._db.query_one(
-            "SELECT * FROM mix_design WHERE code = ? AND revision = ?", (key, revision)
+        row = require_one(
+            self._db,
+            "SELECT * FROM mix_design WHERE code = ? AND revision = ?",
+            (key, revision),
+            "mix design revision",
+            f"{key} r{revision}",
         )
-        if row is None:
-            raise NotFoundError("mix design revision", f"{key} r{revision}")
         return self._from_row(row)
 
     def latest(self, code: str) -> MixDesign:
         """The highest revision on file for a code."""
         key = normalize_code(code, field="mix_code")
-        row = self._db.query_one(
-            "SELECT * FROM mix_design WHERE code = ? ORDER BY revision DESC LIMIT 1", (key,)
+        row = require_one(
+            self._db,
+            "SELECT * FROM mix_design WHERE code = ? ORDER BY revision DESC LIMIT 1",
+            (key,),
+            "mix design",
+            key,
         )
-        if row is None:
-            raise NotFoundError("mix design", key)
         return self._from_row(row)
 
     def revisions(self, code: str) -> tuple[MixDesign, ...]:

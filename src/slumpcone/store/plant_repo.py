@@ -19,6 +19,7 @@ from slumpcone.plant.plant import MixingMethod, Plant
 from slumpcone.plant.scale import Scale
 from slumpcone.plant.silo import Silo
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import day, quantity, text
 from slumpcone.units.quantity import Quantity
 from slumpcone.units.system import UnitSystem
@@ -121,9 +122,7 @@ class PlantRepository:
     def get(self, code: str) -> Plant:
         """The plant filed under ``code``, with its scales."""
         key = normalize_code(code, field="plant_code")
-        row = self._db.query_one("SELECT * FROM plant WHERE code = ?", (key,))
-        if row is None:
-            raise NotFoundError("plant", key)
+        row = require_one(self._db, "SELECT * FROM plant WHERE code = ?", (key,), "plant", key)
         scales = self._db.query(
             "SELECT * FROM plant_scale WHERE plant_code = ? ORDER BY code", (key,)
         )

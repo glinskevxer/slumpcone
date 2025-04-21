@@ -18,9 +18,10 @@ import hashlib
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from slumpcone.errors import NotFoundError, ValidationError
+from slumpcone.errors import ValidationError
 from slumpcone.identity import normalize_name
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import day_range
 
 GENESIS = "0" * 64
@@ -158,9 +159,13 @@ class AuditLog:
 
     def get(self, identifier: int) -> AuditEvent:
         """One event by its number."""
-        row = self._db.query_one("SELECT * FROM audit_event WHERE id = ?", (identifier,))
-        if row is None:
-            raise NotFoundError("audit event", str(identifier))
+        row = require_one(
+            self._db,
+            "SELECT * FROM audit_event WHERE id = ?",
+            (identifier,),
+            "audit event",
+            str(identifier),
+        )
         return self._from_row(row)
 
     def verify(self) -> tuple[int, ...]:

@@ -17,6 +17,7 @@ from slumpcone.delivery.water import RequestedBy, WaterAddition
 from slumpcone.errors import NotFoundError
 from slumpcone.identity import normalize_code, normalize_ticket_number
 from slumpcone.store.db import Database
+from slumpcone.store.guards import require_one
 from slumpcone.store.rows import day, day_range, moment, quantity, text, whole
 from slumpcone.units.quantity import Quantity
 
@@ -75,9 +76,7 @@ class DeliveryRepository:
     def truck(self, code: str) -> Truck:
         """One truck by code."""
         key = normalize_code(code, field="truck_code")
-        row = self._db.query_one("SELECT * FROM truck WHERE code = ?", (key,))
-        if row is None:
-            raise NotFoundError("truck", key)
+        row = require_one(self._db, "SELECT * FROM truck WHERE code = ?", (key,), "truck", key)
         return _truck_from_row(row)
 
     def trucks(self) -> tuple[Truck, ...]:
@@ -179,9 +178,9 @@ class DeliveryRepository:
     def get(self, ticket_number: str) -> Delivery:
         """One delivery by ticket number."""
         key = normalize_ticket_number(ticket_number)
-        row = self._db.query_one("SELECT * FROM delivery WHERE ticket_number = ?", (key,))
-        if row is None:
-            raise NotFoundError("delivery", key)
+        row = require_one(
+            self._db, "SELECT * FROM delivery WHERE ticket_number = ?", (key,), "delivery", key
+        )
         return self._from_row(row)
 
     def between(self, start: date, end: date) -> tuple[Delivery, ...]:
