@@ -22,6 +22,7 @@ from slumpcone.store.account_repo import AccountRepository
 from slumpcone.store.audit import AuditLog
 from slumpcone.store.batch_repo import BatchRepository
 from slumpcone.store.bleeding_repo import BleedingRepository
+from slumpcone.store.carbon_repo import CarbonRepository
 from slumpcone.store.db import Database
 from slumpcone.store.delivery_repo import DeliveryRepository
 from slumpcone.store.fresh_repo import FreshTestRepository
@@ -62,6 +63,7 @@ COUNTED_TABLES = (
     "maturity_curve",
     "bleed_test",
     "uniformity_test",
+    "emission_factor",
     "temperature_log",
     "account",
     "invoice",
@@ -116,6 +118,7 @@ class Register:
         self.maturity = MaturityRepository(database)
         self.bleeding = BleedingRepository(database)
         self.uniformity = UniformityRepository(database)
+        self.carbon = CarbonRepository(database)
         self.accounts = AccountRepository(database)
         self.invoices = InvoiceRepository(database)
 
