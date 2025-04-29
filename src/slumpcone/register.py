@@ -27,6 +27,7 @@ from slumpcone.store.db import Database
 from slumpcone.store.delivery_repo import DeliveryRepository
 from slumpcone.store.fresh_repo import FreshTestRepository
 from slumpcone.store.hardened_repo import HardenedRepository
+from slumpcone.store.haul_repo import HaulRepository
 from slumpcone.store.ingest_repo import IngestRepository
 from slumpcone.store.inventory_repo import InventoryRepository
 from slumpcone.store.invoice_repo import InvoiceRepository
@@ -119,6 +120,7 @@ class Register:
         self.bleeding = BleedingRepository(database)
         self.uniformity = UniformityRepository(database)
         self.carbon = CarbonRepository(database)
+        self.haul = HaulRepository(database)
         self.accounts = AccountRepository(database)
         self.invoices = InvoiceRepository(database)
 
