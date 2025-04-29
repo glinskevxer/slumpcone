@@ -62,9 +62,17 @@ def schedule_for_order(
     load_size: Quantity,
     rate: Quantity | None,
     start: datetime | None,
+    use_profile: bool = True,
 ) -> Schedule:
-    """Lay a booked order out, filling in what the booking did not say."""
+    """Lay a booked order out, filling in what the booking did not say.
+
+    The cycle handed in is the caller's guess. A job with a profile measured off
+    its own tickets beats a guess every time, so the profile wins unless the
+    caller has explicitly said not to use it.
+    """
     order = register.orders.get(order_number)
+    if use_profile:
+        cycle = register.haul.get_or(order.project_code, cycle)
     pour_rate = rate if rate is not None else order.rate
     if pour_rate is None:
         raise ScheduleError(
@@ -88,6 +96,7 @@ def dispatch_group() -> None:
 @click.option("--load", "load_size", default="9 yd3", help="Load size.")
 @click.option("--rate", default=None, help='Placing rate, "30 yd3".')
 @click.option("--start", default=None, metavar="YYYY-MM-DDTHH:MM")
+@click.option("--ignore-profile", is_flag=True, help="Use the given cycle, not the job's.")
 @cycle_options
 @click.pass_obj
 @handle_errors
@@ -97,6 +106,7 @@ def schedule_command(
     load_size: str,
     rate: str | None,
     start: str | None,
+    ignore_profile: bool,
     load: int,
     out: int,
     site: int,
@@ -113,6 +123,7 @@ def schedule_command(
             load_size=Quantity.parse(load_size),
             rate=None if rate is None else Quantity.parse(rate),
             start=None if start is None else parse_moment(start),
+            use_profile=not ignore_profile,
         )
     click.echo(heading(f"Schedule, {found.order_number}"))
     click.echo(
@@ -340,3 +351,129 @@ def day_command(
     for first, second in clashes:
         click.echo(f"  {first} and {second} want the plant at the same time")
     click.echo(f"{len(schedules)} pour(s), {len(clashes)} overlap(s)")
+
+
+@dispatch_group.command("haul")
+@click.argument("project_code")
+@cycle_options
+@click.option("--notes", default="")
+@click.pass_obj
+@handle_errors
+def haul_command(
+    context: CliContext,
+    project_code: str,
+    load: int,
+    out: int,
+    site: int,
+    back: int,
+    wash: int,
+    notes: str,
+) -> None:
+    """File a haul profile for one job by hand."""
+    cycle = cycle_from(load, out, site, back, wash)
+    with context.register() as register:
+        register.haul.save(project_code, cycle, notes=notes)
+    click.echo(f"{project_code.strip().upper()}: {cycle.describe()}")
+
+
+@dispatch_group.command("fit")
+@click.argument("project_code")
+@day_option("--on", "The day to record the fit against.")
+@click.option("--load", "load_minutes", type=int, default=10)
+@click.option("--wash", "wash_minutes", type=int, default=5)
+@click.option(
+    "--label",
+    default=None,
+    help="The job name written on the tickets. Defaults to the project code.",
+)
+@click.pass_obj
+@handle_errors
+def fit_command(
+    context: CliContext,
+    project_code: str,
+    on: date,
+    load_minutes: int,
+    wash_minutes: int,
+    label: str | None,
+) -> None:
+    """Fit a haul profile from the deliveries already on file for a job.
+
+    A ticket carries the job as the free text the dispatcher typed, not as the
+    project code, and the two are rarely the same string. So the label the
+    tickets actually carry is an option, and it defaults to the code for the
+    plants where somebody was disciplined about it.
+    """
+    wanted = (label or project_code).strip().casefold()
+    with context.register() as register:
+        tickets = {
+            ticket.number
+            for ticket in register.batches.between(date(1900, 1, 1), on)
+            if ticket.project is not None and ticket.project.casefold() == wanted
+        }
+        deliveries = [
+            delivery
+            for delivery in register.deliveries.between(date(1900, 1, 1), on)
+            if delivery.ticket_number in tickets
+        ]
+        cycle = register.haul.fit(
+            project_code,
+            deliveries,
+            loading=timedelta(minutes=load_minutes),
+            wash=timedelta(minutes=wash_minutes),
+            measured_on=on,
+        )
+    click.echo(f"fitted off {len(deliveries)} delivery record(s)")
+    click.echo(cycle.describe())
+
+
+@dispatch_group.command("profiles")
+@click.pass_obj
+@handle_errors
+def profiles_command(context: CliContext) -> None:
+    """Every haul profile on file."""
+    with context.register() as register:
+        rows = []
+        for code in register.haul.projects():
+            cycle = register.haul.get(code)
+            measured, count, notes = register.haul.provenance(code)
+            rows.append(
+                [
+                    code,
+                    f"{cycle.loading.total_seconds() / 60:.0f}",
+                    f"{cycle.haul_out.total_seconds() / 60:.0f}",
+                    f"{cycle.on_site.total_seconds() / 60:.0f}",
+                    f"{cycle.haul_back.total_seconds() / 60:.0f}",
+                    f"{cycle.wash.total_seconds() / 60:.0f}",
+                    "-" if measured is None else measured.isoformat(),
+                    count,
+                    notes,
+                ]
+            )
+    click.echo(
+        render_table(
+            (
+                Column("job"),
+                Column("load", Align.RIGHT),
+                Column("out", Align.RIGHT),
+                Column("site", Align.RIGHT),
+                Column("back", Align.RIGHT),
+                Column("wash", Align.RIGHT),
+                Column("measured"),
+                Column("records", Align.RIGHT),
+                Column("source"),
+            ),
+            rows,
+        )
+    )
+    click.echo(f"{len(rows)} profile(s)")
+
+
+@dispatch_group.command("forget")
+@click.argument("project_code")
+@click.pass_obj
+@handle_errors
+def forget_command(context: CliContext, project_code: str) -> None:
+    """Drop a haul profile."""
+    with context.register() as register:
+        register.haul.forget(project_code)
+    click.echo(f"{project_code.strip().upper()} profile dropped")
