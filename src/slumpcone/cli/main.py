@@ -24,6 +24,7 @@ from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
 from slumpcone.cli.control_cmds import control_group
 from slumpcone.cli.delivery_cmds import delivery_group
 from slumpcone.cli.demo_cmds import demo_group
+from slumpcone.cli.dispatch_cmds import dispatch_group
 from slumpcone.cli.export_cmds import export_group
 from slumpcone.cli.field_cmds import field_group
 from slumpcone.cli.hardened_cmds import beam_group, core_group
@@ -83,6 +84,7 @@ cli.add_command(invoice_group)
 cli.add_command(bleed_group)
 cli.add_command(mixer_group)
 cli.add_command(carbon_group)
+cli.add_command(dispatch_group)
 cli.add_command(demo_group)
 
 
