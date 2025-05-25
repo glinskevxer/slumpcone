@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 import click
 
@@ -15,6 +15,8 @@ from slumpcone.report.compliance import (
     from_trucks,
     render_compliance_report,
 )
+from slumpcone.report.cusum import build_cusum
+from slumpcone.report.daily import render_day, render_week, summarise_day
 from slumpcone.report.fleet import render_fleet_report
 from slumpcone.report.nonconformance import (
     counts_by_severity,
@@ -25,6 +27,7 @@ from slumpcone.report.nonconformance import (
     render_register,
 )
 from slumpcone.report.production import render_production_report
+from slumpcone.report.utilisation import utilisation
 from slumpcone.report.yield_report import render_yield_report
 from slumpcone.spec.frequency import check_frequency
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
@@ -196,3 +199,135 @@ def frequency_command(context: CliContext, start: date, end: date, area: str | N
     )
     click.echo(heading(f"Sampling frequency, {start.isoformat()} to {end.isoformat()}"))
     click.echo(render_table(columns, rows))
+
+
+@report_group.command("day")
+@day_option()
+@click.option("--plant", "plant_code", default=None)
+@click.option("--findings", type=int, default=10, help="How many findings to print.")
+@click.pass_obj
+@handle_errors
+def day_report_command(
+    context: CliContext, on: date, plant_code: str | None, findings: int
+) -> None:
+    """The one page a plant manager reads first."""
+    with context.register() as register:
+        summary = summarise_day(register, on, plant_code=plant_code)
+    click.echo(render_day(summary, findings_shown=findings))
+
+
+@report_group.command("week")
+@window_options
+@click.option("--plant", "plant_code", default=None)
+@click.pass_obj
+@handle_errors
+def week_report_command(
+    context: CliContext, start: date, end: date, plant_code: str | None
+) -> None:
+    """A line per day across a window."""
+    if end < start:
+        raise click.UsageError("the window ends before it starts")
+    days = []
+    with context.register() as register:
+        cursor = start
+        while cursor <= end:
+            days.append(summarise_day(register, cursor, plant_code=plant_code))
+            cursor = cursor + timedelta(days=1)
+    click.echo(heading(f"Days, {start.isoformat()} to {end.isoformat()}"))
+    click.echo(render_week(days))
+    click.echo(f"{sum(1 for day in days if day.needs_attention)} day(s) needing attention")
+
+
+@report_group.command("utilisation")
+@window_options
+@click.pass_obj
+@handle_errors
+def utilisation_command(context: CliContext, start: date, end: date) -> None:
+    """What the fleet did with its hours."""
+    with context.register() as register:
+        day = utilisation(
+            list(register.batches.between(start, end)),
+            list(register.deliveries.between(start, end)),
+        )
+    click.echo(heading(f"Utilisation, {start.isoformat()} to {end.isoformat()}"))
+    click.echo(day.describe())
+    click.echo("")
+    click.echo(
+        render_table(
+            (
+                Column("truck"),
+                Column("loads", Align.RIGHT),
+                Column("volume", Align.RIGHT),
+                Column("avg load", Align.RIGHT),
+                Column("yd3/h", Align.RIGHT),
+                Column("waiting", Align.RIGHT),
+                Column("records", Align.RIGHT),
+            ),
+            [
+                [
+                    one.truck_code,
+                    one.loads,
+                    one.volume.format(1),
+                    one.average_load.format(1),
+                    f"{one.yards_per_hour:.1f}",
+                    one.waiting_share.format(0),
+                    "thin" if one.is_thin else one.complete_records,
+                ]
+                for one in day.ranked()
+            ],
+        )
+    )
+    waiter = day.worst_waiter()
+    if waiter is not None and waiter.waiting.total_seconds() > 0:
+        minutes = waiter.waiting.total_seconds() / 60
+        click.echo(f"most time standing: {waiter.truck_code}, {minutes:.0f} min")
+
+
+@report_group.command("cusum")
+@click.argument("mix_code")
+@click.option("--target", default=None, help='Target strength, "4600 psi".')
+@click.option("--deviation", default=None, help='Standard deviation, "400 psi".')
+@click.option("--slack", type=float, default=0.5, help="Slack, in deviations.")
+@click.option("--limit", type=float, default=5.0, help="Decision limit, in deviations.")
+@click.pass_obj
+@handle_errors
+def cusum_command(
+    context: CliContext,
+    mix_code: str,
+    target: str | None,
+    deviation: str | None,
+    slack: float,
+    limit: float,
+) -> None:
+    """Has the mean moved on one mixture."""
+    with context.register() as register:
+        tests = list(register.strength.tests_for_mix(mix_code))
+        aim = (
+            Quantity.parse(target)
+            if target is not None
+            else register.mixes.latest(mix_code).specified_strength
+        )
+    chart = build_cusum(
+        tests,
+        aim,
+        deviation=None if deviation is None else Quantity.parse(deviation),
+        slack=slack,
+        limit=limit,
+    )
+    click.echo(heading(f"Cusum, {mix_code.strip().upper()}"))
+    click.echo(
+        render_pairs(
+            [
+                ("target", chart.target.format(0)),
+                ("deviation", chart.deviation.format(0)),
+                ("slack", f"{chart.slack} sigma ({chart.slack_psi:.0f} psi)"),
+                ("limit", f"{chart.limit} sigma ({chart.limit_psi:.0f} psi)"),
+                ("tests", len(chart.points)),
+                ("verdict", "stable" if chart.is_stable else "shifted"),
+            ]
+        )
+    )
+    click.echo("")
+    click.echo(chart.render())
+    for run in chart.runs:
+        click.echo(f"  {run.describe()}")
