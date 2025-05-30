@@ -5,6 +5,16 @@ from __future__ import annotations
 import click
 
 from slumpcone.cli.common import CliContext, handle_errors
+from slumpcone.store.maintenance import (
+    back_up,
+    backups_in,
+    integrity,
+    prune_backups,
+    restore,
+    space,
+    timestamped_backup,
+    vacuum,
+)
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
 
 
@@ -60,3 +70,123 @@ def info_command(context: CliContext) -> None:
     columns = (Column("table"), Column("rows", Align.RIGHT))
     rows = [[table, count] for table, count in health.counts.items()]
     click.echo(render_table(columns, rows))
+
+
+@register_group.command("verify")
+@click.pass_obj
+@handle_errors
+def verify_command(context: CliContext) -> None:
+    """Check the pages and the references, which are two different questions."""
+    with context.register() as register:
+        report = integrity(register.database)
+        room = space(register.database)
+    click.echo(report.describe())
+    click.echo(
+        render_pairs(
+            [
+                ("pages", "consistent" if report.pages_ok else "problems found"),
+                ("references", "all resolve" if report.keys_ok else "orphans found"),
+                ("size", room.describe()),
+                (
+                    "vacuum",
+                    "worth doing" if room.is_worth_vacuuming else "not worth doing yet",
+                ),
+            ]
+        )
+    )
+    for line in report.page_problems:
+        click.echo(f"  page: {line}")
+    for line in report.orphan_rows:
+        click.echo(f"  reference: {line}")
+    if not report.is_sound:
+        raise click.ClickException("the register did not pass its checks")
+
+
+@register_group.command("backup")
+@click.argument("destination", required=False)
+@click.option("--into", "folder", default=None, help="A folder to name the file in.")
+@click.option("--stem", default="register", help="What to call it, before the stamp.")
+@click.pass_obj
+@handle_errors
+def backup_command(
+    context: CliContext, destination: str | None, folder: str | None, stem: str
+) -> None:
+    """Take a consistent snapshot, even while the plant is batching."""
+    if (destination is None) == (folder is None):
+        raise click.UsageError("give a destination file or --into a folder, not both")
+    with context.register() as register:
+        made = (
+            back_up(register.database, destination)
+            if destination is not None
+            else timestamped_backup(register.database, folder or ".", stem=stem)
+        )
+    click.echo(f"backed up to {made} ({made.stat().st_size / 1024:.0f} KiB)")
+
+
+@register_group.command("restore")
+@click.argument("backup")
+@click.argument("destination")
+@click.option("--force", is_flag=True, help="Write over a register that is already there.")
+@handle_errors
+def restore_command(backup: str, destination: str, force: bool) -> None:
+    """Put a backup back, after checking it."""
+    put = restore(backup, destination, force=force)
+    click.echo(f"restored {backup} to {put}")
+
+
+@register_group.command("backups")
+@click.argument("folder")
+@click.pass_obj
+@handle_errors
+def backups_command(context: CliContext, folder: str) -> None:
+    """Every backup in a folder."""
+    found = backups_in(folder)
+    click.echo(
+        render_table(
+            (Column("file"), Column("KiB", Align.RIGHT)),
+            [[path.name, f"{path.stat().st_size / 1024:.0f}"] for path in found],
+        )
+    )
+    click.echo(f"{len(found)} backup(s)")
+
+
+@register_group.command("prune")
+@click.argument("folder")
+@click.option("--keep", type=int, default=7, help="How many to keep.")
+@click.option("--dry-run", is_flag=True, help="Say what would go, delete nothing.")
+@handle_errors
+def prune_command(folder: str, keep: int, dry_run: bool) -> None:
+    """Delete all but the newest backups."""
+    if dry_run:
+        if keep < 1:
+            raise click.ClickException("a prune has to keep at least one backup")
+        found = backups_in(folder)
+        doomed = found[: max(0, len(found) - keep)]
+        for path in doomed:
+            click.echo(f"  would delete {path.name}")
+        click.echo(f"{len(doomed)} of {len(found)} would go")
+        return
+    gone = prune_backups(folder, keep)
+    for path in gone:
+        click.echo(f"  deleted {path.name}")
+    click.echo(f"{len(gone)} deleted, {len(backups_in(folder))} kept")
+
+
+@register_group.command("vacuum")
+@click.option(
+    "--minimum",
+    type=float,
+    default=0.0,
+    help="Refuse unless this share of the file is free, 0 to 1.",
+)
+@click.pass_obj
+@handle_errors
+def vacuum_command(context: CliContext, minimum: float) -> None:
+    """Rewrite the file to reclaim free pages."""
+    with context.register() as register:
+        before = vacuum(register.database, minimum_free_share=minimum)
+        after = space(register.database)
+    reclaimed = (before.total_bytes - after.total_bytes) / 1024
+    click.echo(f"before: {before.describe()}")
+    click.echo(f"after:  {after.describe()}")
+    click.echo(f"{reclaimed:.0f} KiB reclaimed")
