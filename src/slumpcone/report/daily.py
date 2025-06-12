@@ -25,7 +25,9 @@ from slumpcone.report.compliance import (
     calendar,
     from_catalog,
     from_plant,
+    from_technicians,
     from_trucks,
+    uncovered_tests,
 )
 from slumpcone.report.inventory_report import reorder_list, silo_status
 from slumpcone.report.nonconformance import (
@@ -57,6 +59,7 @@ class DaySummary:
     blocked_now: int
     expiring_soon: int
     reorders: int
+    uncovered_tests: tuple[str, ...] = ()
 
     @property
     def tested_share(self) -> Percent:
@@ -74,7 +77,11 @@ class DaySummary:
     def needs_attention(self) -> bool:
         """True when something on the page has to be acted on."""
         return bool(
-            self.major_findings or self.blocked_now or self.rejected_loads or self.reorders
+            self.major_findings
+            or self.blocked_now
+            or self.rejected_loads
+            or self.reorders
+            or self.uncovered_tests
         )
 
     def describe(self) -> str:
@@ -121,6 +128,8 @@ def summarise_day(register: Register, on: date, *, plant_code: str | None = None
         if plant_code is None or plant.code == plant_code.strip().upper():
             items.extend(from_plant(plant))
     items.extend(from_trucks(register.deliveries.trucks()))
+    technicians = register.people.all()
+    items.extend(from_technicians(technicians, on))
     reorders = 0
     for plant in plants:
         if plant_code is not None and plant.code != plant_code.strip().upper():
@@ -140,6 +149,7 @@ def summarise_day(register: Register, on: date, *, plant_code: str | None = None
         len(blocking(items, on)),
         len(calendar(items, on, horizon_days=14)),
         reorders,
+        uncovered_tests(technicians, on) if technicians else (),
     )
 
 
@@ -159,6 +169,10 @@ def render_day(summary: DaySummary, *, findings_shown: int = 10) -> str:
                 ("blocked now", summary.blocked_now),
                 ("expiring in 14 days", summary.expiring_soon),
                 ("silos to reorder", summary.reorders),
+                (
+                    "tests nobody may run",
+                    ", ".join(summary.uncovered_tests) or "none",
+                ),
                 ("verdict", "attention" if summary.needs_attention else "clear"),
             ]
         ),

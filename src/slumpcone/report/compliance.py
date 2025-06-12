@@ -1,11 +1,17 @@
 """The compliance calendar: everything that expires, in one list.
 
-Five different things run out on five different clocks, and each of them is
-kept in a different part of the register. Material certificates, scale
-calibrations, the plant's own certification, mixer uniformity tests and mix
-submittals. A plant manager does not think of those as five lists. They think
-of it as "what stops me batching next month", and that is one list sorted by
-date.
+Six different things run out on six different clocks, and each of them is kept
+in a different part of the register. Material certificates, scale calibrations,
+the plant's own certification, mixer uniformity tests, mix submittals and the
+technicians' own cards. A plant manager does not think of those as six lists.
+They think of it as "what stops me batching next month", and that is one list
+sorted by date.
+
+The technician cards were the last to be added and they are the ones people are
+surprised by. A lapsed card does not stop the mixer turning, so it is tempting
+to file it under paperwork. It stops the testing, and a load nobody may
+lawfully test is a load nobody may accept, so it blocks just as hard as a scale
+that is out of calibration.
 
 The list is built from the same objects the rules read, so nothing here can
 disagree with the refusal a batch would get. Anything that computes an expiry
@@ -23,6 +29,7 @@ from enum import Enum
 from slumpcone.delivery.truck import Truck
 from slumpcone.materials.catalog import MaterialCatalog
 from slumpcone.materials.certification import CertificateState
+from slumpcone.people.certification import Technician, TestKind, uncovered
 from slumpcone.plant.plant import Plant
 from slumpcone.project.submittal import Submittal, SubmittalStatus
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
@@ -39,6 +46,7 @@ class DueKind(Enum):
     PLANT_CERTIFICATION = "plant certification"
     MIXER_UNIFORMITY = "mixer uniformity"
     MIX_SUBMITTAL = "mix submittal"
+    TECHNICIAN_CARD = "technician certification"
 
     def __str__(self) -> str:
         return self.value
@@ -142,6 +150,39 @@ def from_submittals(submittals: Sequence[Submittal]) -> tuple[DueItem, ...]:
             )
         )
     return tuple(items)
+
+
+def from_technicians(technicians: Sequence[Technician], on: date) -> tuple[DueItem, ...]:
+    """Every certification card, as something with a date on it.
+
+    Cards that lapsed long ago are still reported. A plant that let somebody's
+    card run out two years back has a bigger problem than one that let it run
+    out last week, and dropping the old ones off the list is how it stays
+    invisible.
+    """
+    items: list[DueItem] = []
+    for person in technicians:
+        for card in person.certifications:
+            standing = "current" if card.is_current(on) else "lapsed"
+            items.append(
+                DueItem(
+                    DueKind.TECHNICIAN_CARD,
+                    f"{person.code} {card.number}",
+                    card.expires_on,
+                    f"{person.name}, {card.grade}, {standing}",
+                )
+            )
+    return tuple(items)
+
+
+def uncovered_tests(technicians: Sequence[Technician], on: date) -> tuple[str, ...]:
+    """The tests nobody may run today, as plain names for a report.
+
+    This is a different question from the calendar. The calendar says what runs
+    out; this says what has already stopped being possible, which can be true
+    with nothing on the calendar at all if nobody ever held the card.
+    """
+    return tuple(str(kind) for kind in uncovered(technicians, list(TestKind), on))
 
 
 def calendar(

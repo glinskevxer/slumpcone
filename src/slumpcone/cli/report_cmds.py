@@ -12,6 +12,7 @@ from slumpcone.report.compliance import (
     from_catalog,
     from_plant,
     from_submittals,
+    from_technicians,
     from_trucks,
     render_compliance_report,
 )
@@ -101,6 +102,7 @@ def compliance_command(context: CliContext, on: date, within: int) -> None:
         for plant in register.plants.all():
             items.extend(from_plant(plant))
         items.extend(from_trucks(register.deliveries.trucks()))
+        items.extend(from_technicians(register.people.all(), on))
         for project in register.projects.all():
             items.extend(from_submittals(register.projects.submittals_for(project.code)))
     click.echo(render_compliance_report(items, on, horizon_days=within))
