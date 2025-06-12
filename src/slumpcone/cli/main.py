@@ -22,6 +22,7 @@ from slumpcone.cli.bleed_cmds import bleed_group
 from slumpcone.cli.carbon_cmds import carbon_group
 from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
 from slumpcone.cli.control_cmds import control_group
+from slumpcone.cli.crew_cmds import crew_group
 from slumpcone.cli.delivery_cmds import delivery_group
 from slumpcone.cli.demo_cmds import demo_group
 from slumpcone.cli.dispatch_cmds import dispatch_group
@@ -85,6 +86,7 @@ cli.add_command(bleed_group)
 cli.add_command(mixer_group)
 cli.add_command(carbon_group)
 cli.add_command(dispatch_group)
+cli.add_command(crew_group)
 cli.add_command(demo_group)
 
 
