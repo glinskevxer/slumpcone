@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import functools
 from datetime import date, datetime, time, timedelta
+from typing import Any, cast
 
 import click
 
@@ -28,19 +30,13 @@ from slumpcone.units.quantity import Quantity
 DEFAULT_START = time(7, 0)
 
 
-def cycle_options(command: F) -> F:
-    """The five legs of a truck cycle, as minutes."""
-    for name, default, blurb in (
-        ("--wash", 5, "Washing out after the load."),
-        ("--back", 20, "Driving back to the plant."),
-        ("--site", 15, "On site, waiting and discharging."),
-        ("--out", 20, "Driving out to the job."),
-        ("--load", 10, "Loading at the plant."),
-    ):
-        command = click.option(name, type=int, default=default, help=f"{blurb} Minutes.")(
-            command
-        )
-    return command
+CYCLE_LEGS = (
+    ("--wash", 5, "Washing out after the load."),
+    ("--back", 20, "Driving back to the plant."),
+    ("--site", 15, "On site, waiting and discharging."),
+    ("--out", 20, "Driving out to the job."),
+    ("--load", 10, "Loading at the plant."),
+)
 
 
 def cycle_from(load: int, out: int, site: int, back: int, wash: int) -> CycleTime:
@@ -52,6 +48,41 @@ def cycle_from(load: int, out: int, site: int, back: int, wash: int) -> CycleTim
         timedelta(minutes=back),
         timedelta(minutes=wash),
     )
+
+
+def cycle_options(command: F) -> F:
+    """The five legs of a truck cycle, collapsed into one ``cycle`` argument.
+
+    Every command that lays a pour out takes the same five minute counts and
+    every one of them turned them into a :class:`CycleTime` on its first line.
+    Five parameters in four signatures is twenty places for the legs to end up
+    in the wrong order, which is a bug nothing catches because every leg is an
+    integer number of minutes.
+
+    So the decorator both declares the options and does the assembly, and the
+    commands underneath it take a cycle. The wrapper sits inside the click
+    decorators, which means click still sees the five options and the command
+    body never does.
+    """
+
+    @functools.wraps(command)
+    def wrapper(
+        *args: Any,
+        load: int,
+        out: int,
+        site: int,
+        back: int,
+        wash: int,
+        **kwargs: Any,
+    ) -> Any:
+        return command(*args, cycle=cycle_from(load, out, site, back, wash), **kwargs)
+
+    decorated: F = cast(F, wrapper)
+    for name, default, blurb in CYCLE_LEGS:
+        decorated = click.option(name, type=int, default=default, help=f"{blurb} Minutes.")(
+            decorated
+        )
+    return decorated
 
 
 def schedule_for_order(
@@ -107,14 +138,9 @@ def schedule_command(
     rate: str | None,
     start: str | None,
     ignore_profile: bool,
-    load: int,
-    out: int,
-    site: int,
-    back: int,
-    wash: int,
+    cycle: CycleTime,
 ) -> None:
     """Lay one order out into loads."""
-    cycle = cycle_from(load, out, site, back, wash)
     with context.register() as register:
         found = schedule_for_order(
             register,
@@ -194,14 +220,9 @@ def board_command(
     rate: str | None,
     start: str | None,
     no_slip: bool,
-    load: int,
-    out: int,
-    site: int,
-    back: int,
-    wash: int,
+    cycle: CycleTime,
 ) -> None:
     """Put trucks against one order."""
-    cycle = cycle_from(load, out, site, back, wash)
     with context.register() as register:
         found = schedule_for_order(
             register,
@@ -257,15 +278,10 @@ def at_command(
     trucks: tuple[str, ...],
     load_size: str,
     rate: str | None,
-    load: int,
-    out: int,
-    site: int,
-    back: int,
-    wash: int,
+    cycle: CycleTime,
 ) -> None:
     """What every truck is doing at one moment."""
     when = parse_moment(moment)
-    cycle = cycle_from(load, out, site, back, wash)
     with context.register() as register:
         found = schedule_for_order(
             register,
@@ -300,14 +316,9 @@ def day_command(
     on: date,
     load_size: str,
     rate: str,
-    load: int,
-    out: int,
-    site: int,
-    back: int,
-    wash: int,
+    cycle: CycleTime,
 ) -> None:
     """Every order booked for a day, and which of them collide."""
-    cycle = cycle_from(load, out, site, back, wash)
     schedules = []
     with context.register() as register:
         for order in register.orders.open_orders(on):
@@ -362,15 +373,10 @@ def day_command(
 def haul_command(
     context: CliContext,
     project_code: str,
-    load: int,
-    out: int,
-    site: int,
-    back: int,
-    wash: int,
+    cycle: CycleTime,
     notes: str,
 ) -> None:
     """File a haul profile for one job by hand."""
-    cycle = cycle_from(load, out, site, back, wash)
     with context.register() as register:
         register.haul.save(project_code, cycle, notes=notes)
     click.echo(f"{project_code.strip().upper()}: {cycle.describe()}")

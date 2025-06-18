@@ -163,3 +163,86 @@ class CaseFitting:
         result = run(runner, register, "dispatch", "schedule", "ORD-1")
         assert result.exit_code == 0
         assert "trucks needed" in result.output
+
+
+class CaseTheCycleOptions:
+    def test_every_leg_reaches_the_command(self, runner: CliRunner, register: str) -> None:
+        # The five legs are all integers in minutes, so a wrong order is silent.
+        # Giving each one a different value proves each lands where it belongs.
+        run(
+            runner,
+            register,
+            "dispatch",
+            "haul",
+            "P-2024-118",
+            "--load",
+            "11",
+            "--out",
+            "22",
+            "--site",
+            "33",
+            "--back",
+            "44",
+            "--wash",
+            "55",
+        )
+        result = run(runner, register, "dispatch", "profiles")
+        line = [row for row in result.output.splitlines() if "P-2024-118" in row][0]
+        assert line.split()[1:6] == ["11", "22", "33", "44", "55"]
+
+    def test_the_round_trip_is_the_sum(self, runner: CliRunner, register: str) -> None:
+        result = run(
+            runner,
+            register,
+            "dispatch",
+            "haul",
+            "P-2024-118",
+            "--load",
+            "11",
+            "--out",
+            "22",
+            "--site",
+            "33",
+            "--back",
+            "44",
+            "--wash",
+            "55",
+        )
+        assert "165 min round trip" in result.output
+
+    def test_the_trip_to_site_is_loading_plus_haul_out(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        result = run(
+            runner,
+            register,
+            "dispatch",
+            "haul",
+            "P-2024-118",
+            "--load",
+            "11",
+            "--out",
+            "22",
+            "--site",
+            "33",
+            "--back",
+            "44",
+            "--wash",
+            "55",
+        )
+        assert "33 min to site" in result.output
+
+    def test_the_defaults_still_apply(self, runner: CliRunner, register: str) -> None:
+        result = run(runner, register, "dispatch", "haul", "P-2024-118")
+        assert "70 min round trip" in result.output
+
+    def test_the_options_still_show_in_help(self, runner: CliRunner, register: str) -> None:
+        text = run(runner, register, "dispatch", "haul", "--help").output
+        for name in ("--load", "--out", "--site", "--back", "--wash"):
+            assert name in text
+
+    def test_the_command_takes_no_cycle_option_of_its_own(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        # The collapsing happens inside the decorator, so nobody can pass one.
+        assert "--cycle" not in run(runner, register, "dispatch", "haul", "--help").output
