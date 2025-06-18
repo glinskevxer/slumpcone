@@ -29,6 +29,7 @@ from slumpcone.report.nonconformance import (
 )
 from slumpcone.report.production import render_production_report
 from slumpcone.report.utilisation import utilisation
+from slumpcone.report.witness import audit_witnesses
 from slumpcone.report.yield_report import render_yield_report
 from slumpcone.spec.frequency import check_frequency
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
@@ -333,3 +334,67 @@ def cusum_command(
     click.echo(chart.render())
     for run in chart.runs:
         click.echo(f"  {run.describe()}")
+
+
+@report_group.command("witness")
+@window_options
+@click.option("--retests", "retests_only", is_flag=True, help="Only what needs a retest.")
+@click.option("--ticket", default=None, help="Just one load.")
+@click.pass_obj
+@handle_errors
+def witness_command(
+    context: CliContext,
+    start: date,
+    end: date,
+    retests_only: bool,
+    ticket: str | None,
+) -> None:
+    """Would the results on file stand up if somebody asked who took them."""
+    with context.register() as register:
+        tests = (
+            list(register.fresh.for_ticket(ticket))
+            if ticket is not None
+            else list(register.fresh.between(start, end))
+        )
+        audit = audit_witnesses(tests, register.people.all())
+    click.echo(heading(f"Witness audit, {start.isoformat()} to {end.isoformat()}"))
+    click.echo(audit.describe())
+    findings = audit.needs_retest if retests_only else audit.findings
+    if findings:
+        click.echo("")
+        click.echo(
+            render_table(
+                (
+                    Column("ticket"),
+                    Column("test"),
+                    Column("technician"),
+                    Column("problem"),
+                    Column("fix"),
+                ),
+                [
+                    [
+                        one.ticket_number,
+                        str(one.kind),
+                        one.technician or "-",
+                        str(one.problem),
+                        "records" if one.problem.is_a_records_problem else "retest",
+                    ]
+                    for one in findings
+                ],
+            )
+        )
+    click.echo("")
+    click.echo(
+        render_table(
+            (Column("problem"), Column("count", Align.RIGHT)),
+            [
+                [str(problem), count]
+                for problem, count in audit.counts().items()
+                if count or not retests_only
+            ],
+        )
+    )
+    if audit.needs_retest:
+        raise click.ClickException(
+            f"{len(audit.needs_retest)} result(s) cannot be made to stand by filing"
+        )
