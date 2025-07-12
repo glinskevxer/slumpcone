@@ -39,6 +39,7 @@ from slumpcone.cli.mix_cmds import mix_group
 from slumpcone.cli.mixer_cmds import mixer_group
 from slumpcone.cli.plant_cmds import plant_group
 from slumpcone.cli.price_cmds import price_group
+from slumpcone.cli.probe_cmds import probe_group
 from slumpcone.cli.project_cmds import project_group
 from slumpcone.cli.reclaim_cmds import reclaim_group
 from slumpcone.cli.register_cmds import register_group
@@ -89,6 +90,7 @@ cli.add_command(carbon_group)
 cli.add_command(dispatch_group)
 cli.add_command(crew_group)
 cli.add_command(reclaim_group)
+cli.add_command(probe_group)
 cli.add_command(demo_group)
 
 

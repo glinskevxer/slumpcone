@@ -39,6 +39,7 @@ from slumpcone.store.order_repo import OrderRepository
 from slumpcone.store.people_repo import PeopleRepository
 from slumpcone.store.plant_repo import PlantRepository
 from slumpcone.store.pricing_repo import PricingRepository
+from slumpcone.store.probe_repo import ProbeRepository
 from slumpcone.store.project_repo import ProjectRepository
 from slumpcone.store.reclaim_repo import ReclaimRepository
 from slumpcone.store.strength_repo import StrengthRepository
@@ -69,6 +70,7 @@ COUNTED_TABLES = (
     "emission_factor",
     "technician",
     "returned_concrete",
+    "probe_check",
     "temperature_log",
     "account",
     "invoice",
@@ -127,6 +129,7 @@ class Register:
         self.haul = HaulRepository(database)
         self.people = PeopleRepository(database)
         self.reclaim = ReclaimRepository(database)
+        self.probes = ProbeRepository(database)
         self.accounts = AccountRepository(database)
         self.invoices = InvoiceRepository(database)
 
