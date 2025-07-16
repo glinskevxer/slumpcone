@@ -16,9 +16,14 @@ def demo_group() -> None:
 
 @demo_group.command("seed")
 @click.option("--force", is_flag=True, help="Seed even if the register has rows in it.")
+@click.option(
+    "--yard/--no-yard",
+    default=True,
+    help="Also file the crew, tanks, probes and account.",
+)
 @click.pass_obj
 @handle_errors
-def seed_command(context: CliContext, force: bool) -> None:
+def seed_command(context: CliContext, force: bool, yard: bool) -> None:
     """File one plant, one mixture and one day's work."""
     with context.register() as register:
         health = register.health()
@@ -27,7 +32,7 @@ def seed_command(context: CliContext, force: bool) -> None:
                 f"{health.path} already holds {health.total_rows} rows; "
                 "seed an empty register or pass --force"
             )
-        counts = seed(register)
+        counts = seed(register, yard=yard)
     click.echo(heading("Seeded"))
     click.echo(render_pairs(list(counts.items())))
     click.echo("")

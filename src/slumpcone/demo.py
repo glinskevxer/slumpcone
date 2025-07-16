@@ -17,8 +17,10 @@ from datetime import date, datetime, timedelta
 from slumpcone.batching.engine import plan_batch
 from slumpcone.batching.moisture import AggregateMoisture
 from slumpcone.batching.ticket import BatchTicket
+from slumpcone.carbon.factors import EmissionFactor
 from slumpcone.delivery.record import Delivery
 from slumpcone.delivery.truck import Truck
+from slumpcone.dispatch.schedule import CycleTime
 from slumpcone.fresh.tests import FreshTest, FreshTestKind
 from slumpcone.materials.certification import Certificate, CertificateKind
 from slumpcone.materials.kinds import (
@@ -29,14 +31,19 @@ from slumpcone.materials.kinds import (
     WaterSource,
 )
 from slumpcone.materials.spec import Material
+from slumpcone.materials.wash_water import ReturnedConcrete, WashWater
 from slumpcone.mixdesign.design import MixDesign
 from slumpcone.mixdesign.proportions import AdmixtureCharge, Charge, Proportions
+from slumpcone.money import Money
+from slumpcone.people.certification import Certification, Grade, Technician
 from slumpcone.percent import Percent
 from slumpcone.plant.plant import Plant
+from slumpcone.plant.probe import ProbeCheck
 from slumpcone.plant.scale import Scale
 from slumpcone.plant.silo import Silo
 from slumpcone.project.project import Project, SpecifiedClass
 from slumpcone.register import Register
+from slumpcone.sales.account import Account, PaymentTerms
 from slumpcone.spec.exposure import ExposureSet
 from slumpcone.strength.breaks import BreakResult
 from slumpcone.strength.specimen import Specimen, SpecimenSize
@@ -219,8 +226,13 @@ def _project() -> Project:
     )
 
 
-def seed(register: Register) -> dict[str, int]:
-    """File the worked example, returning how much of each kind was written."""
+def seed(register: Register, *, yard: bool = True) -> dict[str, int]:
+    """File the worked example, returning how much of each kind was written.
+
+    ``yard`` adds the scenery: the crew, the tanks, the probes and the account.
+    Turning it off leaves just the day's concrete, which is what somebody
+    reading the batching example wants and what several tests want too.
+    """
     materials = _materials()
     register.materials.save_all(list(materials))
     for certificate in _certificates():
@@ -330,8 +342,115 @@ def seed(register: Register) -> dict[str, int]:
                 )
             )
         sets += 1
-    return {
+    counts = {
         "materials": len(materials),
         "tickets": tickets,
         "specimen sets": sets,
+    }
+    if yard:
+        counts.update(_seed_yard(register))
+    return counts
+
+
+def _seed_yard(register: Register) -> dict[str, int]:
+    """The rest of the plant: the crew, the tanks, the probes and the accounts.
+
+    Kept separate from the batching example on purpose. What is above is one
+    day's concrete traced end to end and every figure in it hangs together.
+    What is here is scenery: enough of each of the other subsystems that every
+    command has something to print, and no more.
+    """
+    register.people.save(
+        Technician(
+            "TECH-7",
+            "R. Okafor",
+            (
+                Certification(
+                    Grade.FIELD_GRADE_I, "ACI-1001", date(2022, 6, 1), date(2027, 6, 1)
+                ),
+            ),
+            "Ashfield testing",
+        )
+    )
+    register.people.save(
+        Technician(
+            "TECH-9",
+            "M. Lindqvist",
+            (
+                # Current, and between them the two cover every test the plant
+                # runs. The strength card is the one about to run out, which is
+                # what the compliance calendar is there to catch.
+                Certification(
+                    Grade.LAB_LEVEL_2, "ACI-3120", date(2023, 2, 1), date(2028, 2, 1)
+                ),
+                Certification(
+                    Grade.STRENGTH_TESTING, "ACI-2044", date(2021, 3, 1), date(2024, 7, 1)
+                ),
+            ),
+            "Ashfield testing",
+        )
+    )
+    register.carbon.load_defaults()
+    register.carbon.load_default_table()
+    for code, kind, value in (
+        ("CEM-I", MaterialClass.CEMENT, 0.922),
+        ("SCM-F", MaterialClass.SCM, 0.027),
+        ("CA-57", MaterialClass.COARSE_AGGREGATE, 0.0075),
+        ("FA-1", MaterialClass.FINE_AGGREGATE, 0.0048),
+        ("W-1", MaterialClass.WATER, 0.0003),
+    ):
+        register.carbon.save_factor(EmissionFactor(code, kind, value))
+    register.haul.save(
+        DEMO_PROJECT,
+        CycleTime(
+            timedelta(minutes=10),
+            timedelta(minutes=22),
+            timedelta(minutes=14),
+            timedelta(minutes=22),
+            timedelta(minutes=5),
+        ),
+        notes="off the map, not yet fitted",
+    )
+    for probe, reading, oven, days in (
+        ("MP-1", 4.5, 4.3, 3),
+        ("MP-1", 4.4, 4.2, 33),
+        ("MP-2", 5.9, 4.4, 5),
+    ):
+        register.probes.save(
+            ProbeCheck(
+                probe,
+                DEMO_DAY - timedelta(days=days),
+                Percent(reading),
+                Percent(oven),
+                "TECH-7",
+            ),
+            DEMO_PLANT,
+        )
+    register.reclaim.save_reading(
+        WashWater("WW-1", 1.021, Quantity(2200, "gal")), DEMO_PLANT, DEMO_DAY
+    )
+    register.reclaim.save_reading(
+        WashWater("WW-2", 1.064, Quantity(900, "gal")), DEMO_PLANT, DEMO_DAY
+    )
+    register.reclaim.save_returned(
+        ReturnedConcrete("881207", DEMO_MIX, Quantity(2.5, "yd3"), timedelta(minutes=68)),
+        DEMO_DAY,
+    )
+    register.accounts.save(
+        Account(
+            "ASH-01",
+            "Ashfield Paving",
+            terms=PaymentTerms(30, discount_days=10, discount_percent=2.0),
+            credit_limit=Money.of("25000.00"),
+        )
+    )
+    register.accounts.quote(
+        "ASH-01", DEMO_MIX, Money.of("118.50"), effective_from=date(2024, 1, 1)
+    )
+    return {
+        "technicians": 2,
+        "probe checks": 3,
+        "wash tanks": 2,
+        "returned loads": 1,
+        "accounts": 1,
     }

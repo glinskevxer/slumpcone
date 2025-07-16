@@ -15,7 +15,7 @@ def booked(
     rate: str | None = "30 yd3",
     on: str = "2024-06-12",
 ) -> None:
-    run(runner, register, "demo", "seed")
+    run(runner, register, "demo", "seed", "--no-yard")
     add_project(runner, register)
     add_class(runner, register)
     args = [

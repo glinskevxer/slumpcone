@@ -121,7 +121,7 @@ class CaseTheDailyPage:
         from slumpcone.demo import seed
 
         register = Register.in_memory()
-        seed(register)
+        seed(register, yard=False)
         return register
 
     def test_a_plant_with_no_technicians_reports_nothing_uncovered(

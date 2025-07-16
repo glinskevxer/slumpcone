@@ -88,11 +88,24 @@ class CaseDraft:
         assert "no tickets in that window" in result.output
 
     def test_an_unquoted_account(self, runner: CliRunner, register: str) -> None:
+        # The demo quotes ASH-01, so this needs an account nobody has priced.
         run(runner, register, "demo", "seed")
-        run(runner, register, "account", "add", "ASH-01", "Ashfield Paving")
-        result = draft(runner, register)
-        assert result.exit_code != 0  # type: ignore[attr-defined]
-        assert "no ticket in this run" in result.output  # type: ignore[attr-defined]
+        run(runner, register, "account", "add", "ROY-02", "Royd Groundworks")
+        result = run(
+            runner,
+            register,
+            "invoice",
+            "draft",
+            "INV-2211",
+            "--account",
+            "ROY-02",
+            "--from",
+            "2024-06-12",
+            "--to",
+            "2024-06-12",
+        )
+        assert result.exit_code != 0
+        assert "no ticket in this run" in result.output
 
     def test_tax(self, runner: CliRunner, register: str) -> None:
         stocked(runner, register)

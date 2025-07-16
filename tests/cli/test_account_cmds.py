@@ -173,7 +173,9 @@ class CaseMargin:
         assert "fully priced" in result.output
 
     def test_an_unquoted_mixture(self, runner: CliRunner, register: str) -> None:
+        # The demo quotes ASH-01 for the paving mix, so this asks about an
+        # account nobody has priced.
         run(runner, register, "demo", "seed")
-        add_account(runner, register)
-        result = run(runner, register, "account", "margin", "ASH-01", "4000P-57")
+        add_account(runner, register, "ROY-02")
+        result = run(runner, register, "account", "margin", "ROY-02", "4000P-57")
         assert result.exit_code != 0

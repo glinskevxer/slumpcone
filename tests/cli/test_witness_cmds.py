@@ -8,7 +8,7 @@ DAY = "2024-06-12"
 
 
 def seeded(runner: CliRunner, register: str) -> None:
-    run(runner, register, "demo", "seed")
+    run(runner, register, "demo", "seed", "--no-yard")
 
 
 def certify(

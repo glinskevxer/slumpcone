@@ -19,10 +19,25 @@ class CaseDay:
         assert "Plant day" in result.output
         assert "loads tested" in result.output
 
-    def test_a_quiet_day_reads_clear(self, runner: CliRunner, register: str) -> None:
+    def test_a_quiet_day_with_nothing_hanging_over_it_reads_clear(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        seeded(runner, register)
+        result = run(runner, register, "report", "day", "--on", "2024-06-20")
+        assert "loads               : 0" in result.output
+        assert "verdict             : clear" in result.output
+
+    def test_a_quiet_day_can_still_need_attention(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        # No concrete went out on the fourth of July, and the demo lab
+        # technician's strength card lapsed on the first, which blocks whether
+        # anybody batched or not.
         seeded(runner, register)
         result = run(runner, register, "report", "day", "--on", "2024-07-04")
-        assert "clear" in result.output
+        assert "loads               : 0" in result.output
+        assert "blocked now         : 1" in result.output
+        assert "verdict             : attention" in result.output
 
     def test_the_findings_can_be_capped(self, runner: CliRunner, register: str) -> None:
         seeded(runner, register)
