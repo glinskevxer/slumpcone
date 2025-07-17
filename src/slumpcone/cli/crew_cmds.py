@@ -89,6 +89,7 @@ def card_command(
                 person.employer,
             )
         )
+        context.note(register, "crew.card", person.code, card.describe())
     click.echo(f"{code.strip().upper()}: {card.describe()}")
 
 

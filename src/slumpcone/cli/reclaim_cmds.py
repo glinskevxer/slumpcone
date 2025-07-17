@@ -216,6 +216,7 @@ def dispose_command(context: CliContext, ticket: str, on: date) -> None:
     """Record that a returned load was dumped."""
     with context.register() as register:
         register.reclaim.dispose(ticket, on)
+        context.note(register, "reclaim.dispose", ticket.strip().upper(), on.isoformat())
     click.echo(f"{ticket.strip().upper()} disposed of on {on.isoformat()}")
 
 

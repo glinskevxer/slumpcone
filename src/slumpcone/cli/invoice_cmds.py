@@ -176,6 +176,7 @@ def issue_command(context: CliContext, number: str, issued_on: str | None) -> No
         invoice = register.invoices.get(number)
         issued = invoice.issue(None if issued_on is None else parse_day(issued_on))
         register.invoices.save(issued)
+        context.note(register, "invoice.issue", issued.number, f"total {issued.total}")
     click.echo(issued.describe())
 
 
@@ -212,6 +213,7 @@ def void_command(context: CliContext, number: str) -> None:
     with context.register() as register:
         voided = register.invoices.get(number).void()
         register.invoices.save(voided)
+        context.note(register, "invoice.void", voided.number)
     click.echo(voided.describe())
 
 

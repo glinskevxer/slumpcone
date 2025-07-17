@@ -43,6 +43,7 @@ def check_command(
     check = ProbeCheck(probe, on, Percent(probe_reading), Percent(oven_reading), technician)
     with context.register() as register:
         register.probes.save(check, plant_code, notes=notes, replace=replace)
+        context.note(register, "probe.check", check.probe_code, check.describe())
     click.echo(check.describe())
 
 

@@ -98,6 +98,7 @@ def add_command(
     )
     with context.register() as register:
         register.mixes.save(design)
+        context.note(register, "mix.save", design.code, f"revision {design.revision}")
     click.echo(design.describe())
 
 

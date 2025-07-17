@@ -27,6 +27,12 @@ from slumpcone.register import Register
 
 DEFAULT_REGISTER = "slumpcone.sqlite3"
 REGISTER_ENV = "SLUMPCONE_REGISTER"
+ACTOR_ENV = "SLUMPCONE_ACTOR"
+
+# What the log says when nobody said who they were. Deliberately a word nobody
+# would type as a name, so a log full of these is obviously a log nobody has
+# configured rather than a log full of somebody called "unknown".
+UNATTRIBUTED = "unattributed"
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -37,10 +43,21 @@ class CliContext:
 
     path: Path
     quiet: bool = False
+    actor: str = UNATTRIBUTED
 
     def register(self) -> Register:
         """Open the register, creating and migrating it if it is not there."""
         return Register.open(self.path)
+
+    def note(self, register: Register, action: str, subject: str, detail: str = "") -> None:
+        """Append what just happened to the audit log.
+
+        Called after the write, never before, so the log does not carry things
+        that were refused. A failure to write the log is deliberately not caught
+        here: a plant that cannot record what it did should stop rather than
+        carry on quietly unlogged.
+        """
+        register.audit.record(self.actor, action, subject, detail)
 
     def say(self, message: str) -> None:
         """Print a progress line unless the caller asked for quiet."""

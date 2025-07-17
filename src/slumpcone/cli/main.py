@@ -20,7 +20,13 @@ from slumpcone.cli.audit_cmds import audit_group
 from slumpcone.cli.batch_cmds import batch_group
 from slumpcone.cli.bleed_cmds import bleed_group
 from slumpcone.cli.carbon_cmds import carbon_group
-from slumpcone.cli.common import DEFAULT_REGISTER, REGISTER_ENV, CliContext
+from slumpcone.cli.common import (
+    ACTOR_ENV,
+    DEFAULT_REGISTER,
+    REGISTER_ENV,
+    UNATTRIBUTED,
+    CliContext,
+)
 from slumpcone.cli.control_cmds import control_group
 from slumpcone.cli.crew_cmds import crew_group
 from slumpcone.cli.delivery_cmds import delivery_group
@@ -55,12 +61,24 @@ from slumpcone.cli.report_cmds import report_group
     help=f"The register file. Defaults to ${REGISTER_ENV} or ./{DEFAULT_REGISTER}.",
 )
 @click.option("--quiet", "-q", is_flag=True, help="Print less.")
+@click.option(
+    "--actor",
+    default=None,
+    metavar="WHO",
+    help=f"Who is running this, for the audit log. Defaults to ${ACTOR_ENV}.",
+)
 @click.version_option(__version__, "-V", "--version", prog_name="slumpcone")
 @click.pass_context
-def cli(ctx: click.Context, register_path: str | None, quiet: bool) -> None:
+def cli(
+    ctx: click.Context,
+    register_path: str | None,
+    quiet: bool,
+    actor: str | None,
+) -> None:
     """Ready-mix concrete production, quality control and delivery compliance."""
     chosen = register_path or os.environ.get(REGISTER_ENV) or DEFAULT_REGISTER
-    ctx.obj = CliContext(Path(chosen), quiet=quiet)
+    who = actor or os.environ.get(ACTOR_ENV) or UNATTRIBUTED
+    ctx.obj = CliContext(Path(chosen), quiet=quiet, actor=who.strip() or UNATTRIBUTED)
 
 
 cli.add_command(register_group)
