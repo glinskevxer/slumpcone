@@ -15,6 +15,7 @@ from slumpcone.store.maintenance import (
     timestamped_backup,
     vacuum,
 )
+from slumpcone.store.timing import run_all, unclean
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
 
 
@@ -190,3 +191,49 @@ def vacuum_command(context: CliContext, minimum: float) -> None:
     click.echo(f"before: {before.describe()}")
     click.echo(f"after:  {after.describe()}")
     click.echo(f"{reclaimed:.0f} KiB reclaimed")
+
+
+@register_group.command("plans")
+@click.option(
+    "--all", "show_all", is_flag=True, help="Show every probe, not just the bad ones."
+)
+@click.pass_obj
+@handle_errors
+def plans_command(context: CliContext, show_all: bool) -> None:
+    """Check that the queries the reports run still use an index.
+
+    Timings are printed and never judged. What is judged is whether SQLite
+    planned to read a table whole, which is a property of the schema rather
+    than of this machine, and which will still be true on the plant's.
+    """
+    with context.register() as register:
+        readings = run_all(register.database)
+    bad = unclean(readings)
+    shown = readings if show_all else bad
+    click.echo(heading("Query plans"))
+    click.echo(
+        render_table(
+            (
+                Column("query"),
+                Column("ms", Align.RIGHT),
+                Column("rows", Align.RIGHT),
+                Column("searches"),
+                Column("scans"),
+            ),
+            [
+                [
+                    one.name,
+                    f"{one.milliseconds:.2f}",
+                    one.rows,
+                    ", ".join(one.searched) or "-",
+                    ", ".join(one.scanned) or "-",
+                ]
+                for one in shown
+            ],
+        )
+    )
+    click.echo(f"{len(readings) - len(bad)} of {len(readings)} probe(s) use an index")
+    if bad:
+        raise click.ClickException(
+            f"{len(bad)} quer(y/ies) read a table whole: " + ", ".join(one.name for one in bad)
+        )
