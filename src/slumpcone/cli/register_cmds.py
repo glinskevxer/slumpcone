@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import click
 
 from slumpcone.cli.common import CliContext, handle_errors
@@ -237,3 +239,21 @@ def plans_command(context: CliContext, show_all: bool) -> None:
         raise click.ClickException(
             f"{len(bad)} quer(y/ies) read a table whole: " + ", ".join(one.name for one in bad)
         )
+
+
+@register_group.command("reference")
+@click.option("--out", "path", default=None, help="Write to a file instead of the screen.")
+@click.pass_obj
+@handle_errors
+def reference_command(context: CliContext, path: str | None) -> None:
+    """Print the command reference, generated from the commands themselves."""
+    from slumpcone.cli.main import cli as root
+    from slumpcone.tools.command_reference import command_count, render_reference
+
+    text = render_reference(root)
+    groups, leaves = command_count(root)
+    if path is None:
+        click.echo(text)
+        return
+    Path(path).write_text(text, encoding="utf-8")
+    click.echo(f"wrote {path}: {groups} group(s), {leaves} command(s)")
