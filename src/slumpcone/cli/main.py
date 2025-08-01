@@ -27,6 +27,7 @@ from slumpcone.cli.common import (
     UNATTRIBUTED,
     CliContext,
 )
+from slumpcone.cli.completion import attach
 from slumpcone.cli.control_cmds import control_group
 from slumpcone.cli.crew_cmds import crew_group
 from slumpcone.cli.delivery_cmds import delivery_group
@@ -119,3 +120,7 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(cli())
+
+# Give every mix, plant, material, account, technician and truck argument its
+# completer in one pass, rather than at a hundred and seventy call sites.
+attach(cli)
