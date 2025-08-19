@@ -22,7 +22,7 @@ from typing import Any, TypeVar
 
 import click
 
-from slumpcone.errors import SlumpconeError
+from slumpcone.errors import ExitCode, SlumpconeError, exit_code_for
 from slumpcone.register import Register
 
 DEFAULT_REGISTER = "slumpcone.sqlite3"
@@ -65,15 +65,30 @@ class CliContext:
             click.echo(message)
 
 
+class Refused(click.ClickException):
+    """A deliberate error, carrying the exit code the shell should see."""
+
+    def __init__(self, message: str, code: ExitCode) -> None:
+        super().__init__(message)
+        self.exit_code = int(code)
+        self.reason = code
+
+
 def handle_errors(command: F) -> F:
-    """Turn a deliberate error into one line and a non zero exit."""
+    """Turn a deliberate error into one line and the right exit code.
+
+    The code is worked out from the exception type rather than written at the
+    raise site, so a new error class gets a sensible code without anybody
+    remembering, and a script that branches on "not on file" keeps working when
+    a command starts raising it from somewhere new.
+    """
 
     @wraps(command)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return command(*args, **kwargs)
         except SlumpconeError as exc:
-            raise click.ClickException(str(exc)) from exc
+            raise Refused(str(exc), exit_code_for(exc)) from exc
 
     return wrapper  # type: ignore[return-value]
 
