@@ -20,6 +20,7 @@ from slumpcone.batching.uniformity import (
     UniformitySample,
 )
 from slumpcone.cli.common import CliContext, day_option, handle_errors, window_options
+from slumpcone.cli.output import listing
 from slumpcone.percent import Percent
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
 from slumpcone.units.quantity import Quantity
@@ -211,28 +212,26 @@ def history_command(context: CliContext, mixer: str) -> None:
     """Every uniformity test on one mixer."""
     with context.register() as register:
         records = [(record, record.judge()) for record in register.uniformity.for_mixer(mixer)]
-    click.echo(
-        render_table(
-            (
-                Column("tested"),
-                Column("plant"),
-                Column("passes", Align.RIGHT),
-                Column("of", Align.RIGHT),
-                Column("verdict"),
-            ),
+    listing(
+        (
+            Column("tested"),
+            Column("plant"),
+            Column("passes", Align.RIGHT),
+            Column("of", Align.RIGHT),
+            Column("verdict"),
+        ),
+        [
             [
-                [
-                    record.tested_on.isoformat(),
-                    record.plant_code or "-",
-                    verdict.passes,
-                    len(verdict.comparisons),
-                    "uniform" if verdict.is_uniform else "not uniform",
-                ]
-                for record, verdict in records
-            ],
-        )
+                record.tested_on.isoformat(),
+                record.plant_code or "-",
+                verdict.passes,
+                len(verdict.comparisons),
+                "uniform" if verdict.is_uniform else "not uniform",
+            ]
+            for record, verdict in records
+        ],
+        "test",
     )
-    click.echo(f"{len(records)} test(s)")
 
 
 @mixer_group.command("list")
@@ -252,26 +251,24 @@ def list_command(
         ]
     if failing:
         pairs = [pair for pair in pairs if not pair[1].is_uniform]
-    click.echo(
-        render_table(
-            (
-                Column("mixer"),
-                Column("tested"),
-                Column("passes", Align.RIGHT),
-                Column("verdict"),
-            ),
+    listing(
+        (
+            Column("mixer"),
+            Column("tested"),
+            Column("passes", Align.RIGHT),
+            Column("verdict"),
+        ),
+        [
             [
-                [
-                    record.mixer,
-                    record.tested_on.isoformat(),
-                    verdict.passes,
-                    "uniform" if verdict.is_uniform else "not uniform",
-                ]
-                for record, verdict in pairs
-            ],
-        )
+                record.mixer,
+                record.tested_on.isoformat(),
+                verdict.passes,
+                "uniform" if verdict.is_uniform else "not uniform",
+            ]
+            for record, verdict in pairs
+        ],
+        "test",
     )
-    click.echo(f"{len(pairs)} test(s)")
 
 
 @mixer_group.command("due")

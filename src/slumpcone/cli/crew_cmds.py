@@ -7,6 +7,7 @@ from datetime import date
 import click
 
 from slumpcone.cli.common import CliContext, day_option, handle_errors, parse_day
+from slumpcone.cli.output import listing
 from slumpcone.errors import NotFoundError
 from slumpcone.people.certification import (
     Certification,
@@ -149,28 +150,26 @@ def list_command(context: CliContext, on: date) -> None:
     """Everybody on file."""
     with context.register() as register:
         people = register.people.all()
-    click.echo(
-        render_table(
-            (
-                Column("code"),
-                Column("name"),
-                Column("employer"),
-                Column("current", Align.RIGHT),
-                Column("lapsed", Align.RIGHT),
-            ),
+    listing(
+        (
+            Column("code"),
+            Column("name"),
+            Column("employer"),
+            Column("current", Align.RIGHT),
+            Column("lapsed", Align.RIGHT),
+        ),
+        [
             [
-                [
-                    person.code,
-                    person.name,
-                    person.employer or "-",
-                    len(person.current(on)),
-                    len(person.lapsed(on)),
-                ]
-                for person in people
-            ],
-        )
+                person.code,
+                person.name,
+                person.employer or "-",
+                len(person.current(on)),
+                len(person.lapsed(on)),
+            ]
+            for person in people
+        ],
+        "technician",
     )
-    click.echo(f"{len(people)} technician(s)")
 
 
 @crew_group.command("roster")

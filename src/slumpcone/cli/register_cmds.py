@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 
 from slumpcone.cli.common import CliContext, handle_errors
+from slumpcone.cli.output import listing
 from slumpcone.store.maintenance import (
     back_up,
     backups_in,
@@ -144,13 +145,11 @@ def restore_command(backup: str, destination: str, force: bool) -> None:
 def backups_command(context: CliContext, folder: str) -> None:
     """Every backup in a folder."""
     found = backups_in(folder)
-    click.echo(
-        render_table(
-            (Column("file"), Column("KiB", Align.RIGHT)),
-            [[path.name, f"{path.stat().st_size / 1024:.0f}"] for path in found],
-        )
+    listing(
+        (Column("file"), Column("KiB", Align.RIGHT)),
+        [[path.name, f"{path.stat().st_size / 1024:.0f}"] for path in found],
+        "backup",
     )
-    click.echo(f"{len(found)} backup(s)")
 
 
 @register_group.command("prune")

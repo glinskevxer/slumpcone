@@ -15,6 +15,7 @@ from slumpcone.cli.common import (
     handle_errors,
     parse_moment,
 )
+from slumpcone.cli.output import listing
 from slumpcone.dispatch.board import assign, trucks_to_hold
 from slumpcone.dispatch.schedule import (
     CycleTime,
@@ -455,23 +456,21 @@ def profiles_command(context: CliContext) -> None:
                     notes,
                 ]
             )
-    click.echo(
-        render_table(
-            (
-                Column("job"),
-                Column("load", Align.RIGHT),
-                Column("out", Align.RIGHT),
-                Column("site", Align.RIGHT),
-                Column("back", Align.RIGHT),
-                Column("wash", Align.RIGHT),
-                Column("measured"),
-                Column("records", Align.RIGHT),
-                Column("source"),
-            ),
-            rows,
-        )
+    listing(
+        (
+            Column("job"),
+            Column("load", Align.RIGHT),
+            Column("out", Align.RIGHT),
+            Column("site", Align.RIGHT),
+            Column("back", Align.RIGHT),
+            Column("wash", Align.RIGHT),
+            Column("measured"),
+            Column("records", Align.RIGHT),
+            Column("source"),
+        ),
+        rows,
+        "profile",
     )
-    click.echo(f"{len(rows)} profile(s)")
 
 
 @dispatch_group.command("forget")

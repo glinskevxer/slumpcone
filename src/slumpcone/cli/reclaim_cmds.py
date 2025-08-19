@@ -7,6 +7,7 @@ from datetime import date, timedelta
 import click
 
 from slumpcone.cli.common import CliContext, day_option, handle_errors, window_options
+from slumpcone.cli.output import listing
 from slumpcone.materials.wash_water import (
     RETURNED_SHARE_LIMIT,
     ReturnedConcrete,
@@ -65,30 +66,28 @@ def tanks_command(context: CliContext, plant_code: str, on: date, usable: bool) 
             else register.reclaim.readings_on(plant_code, on)
         )
     click.echo(heading(f"Wash tanks, {plant_code.strip().upper()} on {on.isoformat()}"))
-    click.echo(
-        render_table(
-            (
-                Column("tank"),
-                Column("sg", Align.RIGHT),
-                Column("solids ppm", Align.RIGHT),
-                Column("solids", Align.RIGHT),
-                Column("held", Align.RIGHT),
-                Column("verdict"),
-            ),
+    listing(
+        (
+            Column("tank"),
+            Column("sg", Align.RIGHT),
+            Column("solids ppm", Align.RIGHT),
+            Column("solids", Align.RIGHT),
+            Column("held", Align.RIGHT),
+            Column("verdict"),
+        ),
+        [
             [
-                [
-                    one.tank,
-                    f"{one.specific_gravity:.3f}",
-                    f"{one.solids_ppm:,.0f}",
-                    one.solids_share.format(2),
-                    one.volume.format(0),
-                    "usable" if one.meets_solids_limit else "over the limit",
-                ]
-                for one in tanks
-            ],
-        )
+                one.tank,
+                f"{one.specific_gravity:.3f}",
+                f"{one.solids_ppm:,.0f}",
+                one.solids_share.format(2),
+                one.volume.format(0),
+                "usable" if one.meets_solids_limit else "over the limit",
+            ]
+            for one in tanks
+        ],
+        "tank",
     )
-    click.echo(f"{len(tanks)} tank(s)")
 
 
 @reclaim_group.command("draw")

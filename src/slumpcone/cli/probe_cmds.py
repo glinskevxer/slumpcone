@@ -7,9 +7,10 @@ from datetime import date
 import click
 
 from slumpcone.cli.common import CliContext, day_option, handle_errors, window_options
+from slumpcone.cli.output import listing, page
 from slumpcone.percent import Percent
 from slumpcone.plant.probe import ProbeCheck
-from slumpcone.textout import Align, Column, heading, render_pairs, render_table
+from slumpcone.textout import Align, Column, heading, render_pairs
 
 
 @click.group("probe")
@@ -57,42 +58,35 @@ def show_command(context: CliContext, probe: str, plant_code: str, on: date) -> 
     """One probe's history and where it stands today."""
     with context.register() as register:
         history = register.probes.history(plant_code, probe)
-    click.echo(heading(f"Probe {history.probe_code}"))
-    click.echo(
-        render_pairs(
+    page(
+        f"Probe {history.probe_code}",
+        [
+            ("checks", len(history.checks)),
+            ("mean offset", f"{history.mean_offset.value:+.2f} points"),
+            ("drift", f"{history.drift.value:.2f} points"),
+            ("drifting", "yes" if history.is_drifting else "no"),
+            ("standing", str(history.standing(on))),
+            ("may batch", "yes" if history.standing(on).may_batch else "no"),
+        ],
+        (
+            Column("checked"),
+            Column("probe", Align.RIGHT),
+            Column("oven", Align.RIGHT),
+            Column("offset", Align.RIGHT),
+            Column("verdict"),
+            Column("technician"),
+        ),
+        [
             [
-                ("checks", len(history.checks)),
-                ("mean offset", f"{history.mean_offset.value:+.2f} points"),
-                ("drift", f"{history.drift.value:.2f} points"),
-                ("drifting", "yes" if history.is_drifting else "no"),
-                ("standing", str(history.standing(on))),
-                ("may batch", "yes" if history.standing(on).may_batch else "no"),
+                one.checked_on.isoformat(),
+                one.probe_reading.format(2),
+                one.oven_reading.format(2),
+                f"{one.offset.value:+.2f}",
+                "ok" if one.is_within_limit else "out of limit",
+                one.technician or "-",
             ]
-        )
-    )
-    click.echo("")
-    click.echo(
-        render_table(
-            (
-                Column("checked"),
-                Column("probe", Align.RIGHT),
-                Column("oven", Align.RIGHT),
-                Column("offset", Align.RIGHT),
-                Column("verdict"),
-                Column("technician"),
-            ),
-            [
-                [
-                    one.checked_on.isoformat(),
-                    one.probe_reading.format(2),
-                    one.oven_reading.format(2),
-                    f"{one.offset.value:+.2f}",
-                    "ok" if one.is_within_limit else "out of limit",
-                    one.technician or "-",
-                ]
-                for one in history.checks
-            ],
-        )
+            for one in history.checks
+        ],
     )
 
 
@@ -137,30 +131,28 @@ def list_command(context: CliContext, plant_code: str, on: date, attention: bool
             else register.probes.histories(plant_code)
         )
     click.echo(heading(f"Probes, {plant_code.strip().upper()} on {on.isoformat()}"))
-    click.echo(
-        render_table(
-            (
-                Column("probe"),
-                Column("checks", Align.RIGHT),
-                Column("last"),
-                Column("offset", Align.RIGHT),
-                Column("drift", Align.RIGHT),
-                Column("standing"),
-            ),
+    listing(
+        (
+            Column("probe"),
+            Column("checks", Align.RIGHT),
+            Column("last"),
+            Column("offset", Align.RIGHT),
+            Column("drift", Align.RIGHT),
+            Column("standing"),
+        ),
+        [
             [
-                [
-                    one.probe_code,
-                    len(one.checks),
-                    "never" if one.latest is None else one.latest.checked_on.isoformat(),
-                    f"{one.mean_offset.value:+.2f}",
-                    f"{one.drift.value:.2f}",
-                    str(one.standing(on)),
-                ]
-                for one in histories
-            ],
-        )
+                one.probe_code,
+                len(one.checks),
+                "never" if one.latest is None else one.latest.checked_on.isoformat(),
+                f"{one.mean_offset.value:+.2f}",
+                f"{one.drift.value:.2f}",
+                str(one.standing(on)),
+            ]
+            for one in histories
+        ],
+        "probe",
     )
-    click.echo(f"{len(histories)} probe(s)")
     with context.register() as register:
         blocked = register.probes.needing_attention(plant_code, on)
     if blocked:

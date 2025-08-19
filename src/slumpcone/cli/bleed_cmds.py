@@ -12,6 +12,7 @@ from datetime import date
 import click
 
 from slumpcone.cli.common import CliContext, day_option, handle_errors, window_options
+from slumpcone.cli.output import listing
 from slumpcone.fresh.bleeding import (
     BleedingError,
     BleedReading,
@@ -203,27 +204,25 @@ def columns_command(context: CliContext, start: date, end: date, failing: bool) 
         results = list(register.bleeding.segregations_between(start, end))
         if failing:
             results = list(register.bleeding.failing_segregations(results))
-    click.echo(
-        render_table(
-            (
-                Column("ticket"),
-                Column("top", Align.RIGHT),
-                Column("bottom", Align.RIGHT),
-                Column("index", Align.RIGHT),
-                Column("direction"),
-                Column("verdict"),
-            ),
+    listing(
+        (
+            Column("ticket"),
+            Column("top", Align.RIGHT),
+            Column("bottom", Align.RIGHT),
+            Column("index", Align.RIGHT),
+            Column("direction"),
+            Column("verdict"),
+        ),
+        [
             [
-                [
-                    result.ticket_number,
-                    result.top_coarse.format(2),
-                    result.bottom_coarse.format(2),
-                    result.index.format(1),
-                    result.direction,
-                    "ok" if result.is_acceptable else "over the cap",
-                ]
-                for result in results
-            ],
-        )
+                result.ticket_number,
+                result.top_coarse.format(2),
+                result.bottom_coarse.format(2),
+                result.index.format(1),
+                result.direction,
+                "ok" if result.is_acceptable else "over the cap",
+            ]
+            for result in results
+        ],
+        "result",
     )
-    click.echo(f"{len(results)} result(s)")

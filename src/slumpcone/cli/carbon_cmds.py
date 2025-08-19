@@ -11,6 +11,7 @@ from slumpcone.carbon.factors import CarbonError, EmissionFactor, Provenance, St
 from slumpcone.carbon.footprint import Footprint, footprint_of, reduction
 from slumpcone.carbon.footprint import compare as order_by_weight
 from slumpcone.cli.common import CliContext, day_option, handle_errors, parse_day
+from slumpcone.cli.output import listing
 from slumpcone.materials.kinds import MaterialClass
 from slumpcone.register import Register
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
@@ -107,30 +108,28 @@ def factors_command(context: CliContext, on: date, stale: bool) -> None:
             if stale
             else sorted(book.as_mapping().values(), key=lambda one: one.material_code)
         )
-    click.echo(
-        render_table(
-            (
-                Column("material"),
-                Column("class"),
-                Column("kg CO2e/kg", Align.RIGHT),
-                Column("stage"),
-                Column("provenance"),
-                Column("published"),
-            ),
+    listing(
+        (
+            Column("material"),
+            Column("class"),
+            Column("kg CO2e/kg", Align.RIGHT),
+            Column("stage"),
+            Column("provenance"),
+            Column("published"),
+        ),
+        [
             [
-                [
-                    one.material_code,
-                    one.material_class.value,
-                    f"{one.kg_co2e_per_kg:.4f}",
-                    str(one.stage),
-                    str(one.provenance),
-                    "-" if one.published_on is None else one.published_on.isoformat(),
-                ]
-                for one in factors
-            ],
-        )
+                one.material_code,
+                one.material_class.value,
+                f"{one.kg_co2e_per_kg:.4f}",
+                str(one.stage),
+                str(one.provenance),
+                "-" if one.published_on is None else one.published_on.isoformat(),
+            ]
+            for one in factors
+        ],
+        "factor",
     )
-    click.echo(f"{len(factors)} factor(s)")
 
 
 @carbon_group.command("drop")
