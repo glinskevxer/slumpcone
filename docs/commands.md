@@ -565,6 +565,19 @@ slumpcone batch day [options]
 | --- | --- | --- | --- |
 | `--on` | YYYY-MM-DD | The date to judge against. |  |
 
+### `batch print`
+
+Print a delivery ticket, laid out and checked against C94 clause 14.
+
+```
+slumpcone batch print <ticket_number> [options]
+```
+
+| option | value | what it does | default |
+| --- | --- | --- | --- |
+| `--check` |  | Only say whether it is complete. |  |
+| `--no-water-line` |  | Leave off the water form. |  |
+
 ## `field`
 
 Record and judge fresh property tests.

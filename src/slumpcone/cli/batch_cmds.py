@@ -16,8 +16,10 @@ from slumpcone.cli.common import (
     parse_moment,
     window_options,
 )
+from slumpcone.errors import NotFoundError
 from slumpcone.percent import Percent
 from slumpcone.report.ticket_audit import render_audit_report, render_ticket
+from slumpcone.report.ticket_print import build_ticket
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
 from slumpcone.units.quantity import Quantity
 
@@ -239,3 +241,45 @@ def day_command(context: CliContext, on: date) -> None:
         summary = register.day_summary(on)
     click.echo(heading(f"Register on {on.isoformat()}"))
     click.echo(render_pairs(list(summary.items())))
+
+
+@batch_group.command("print")
+@click.argument("ticket_number")
+@click.option("--check", is_flag=True, help="Only say whether it is complete.")
+@click.option("--no-water-line", is_flag=True, help="Leave off the water form.")
+@click.pass_obj
+@handle_errors
+def print_command(
+    context: CliContext, ticket_number: str, check: bool, no_water_line: bool
+) -> None:
+    """Print a delivery ticket, laid out and checked against C94 clause 14."""
+    with context.register() as register:
+        ticket = register.batches.get(ticket_number)
+        plant = register.plants.get(ticket.plant_code)
+        try:
+            design = register.mixes.get(ticket.mix_code, ticket.mix_revision)
+        except NotFoundError:
+            design = None
+        try:
+            delivery = register.deliveries.get(ticket.number)
+        except NotFoundError:
+            delivery = None
+    printed = build_ticket(
+        ticket,
+        plant,
+        design=design,
+        delivery=delivery,
+        water_line=not no_water_line,
+    )
+    if not check:
+        click.echo(printed.render())
+        click.echo("")
+    click.echo(printed.describe())
+    for item in printed.missing:
+        click.echo(f"  {item.describe()}")
+    if not printed.water_line:
+        click.echo("  C94 14.1(10) water added at the job: no place left for it")
+    if not printed.is_complete:
+        raise click.ClickException(
+            "this would not stand as a delivery ticket under C94 clause 14"
+        )

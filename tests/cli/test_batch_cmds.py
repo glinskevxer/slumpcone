@@ -350,3 +350,43 @@ class CaseTicket:
         result = run(runner, register, "batch", "day", "--on", "2024-06-12")
         assert "tickets" in result.output
         assert "1" in result.output
+
+
+class CasePrinting:
+    def test_a_seeded_ticket_prints(self, runner: CliRunner, register: str) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(runner, register, "batch", "print", "881204")
+        assert result.exit_code == 0
+        assert "Delivery ticket 881204" in result.output
+        assert "complete under C94" in result.output
+
+    def test_the_water_form_is_there(self, runner: CliRunner, register: str) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(runner, register, "batch", "print", "881204")
+        assert "initials" in result.output
+        assert "receiver" in result.output
+
+    def test_leaving_the_water_form_off_fails_the_check(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(runner, register, "batch", "print", "881204", "--no-water-line")
+        assert result.exit_code != 0
+        assert "no place left for it" in result.output
+
+    def test_check_prints_no_ticket(self, runner: CliRunner, register: str) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(runner, register, "batch", "print", "881204", "--check")
+        assert "Delivery ticket" not in result.output
+        assert "complete under C94" in result.output
+
+    def test_the_optional_items_come_off_the_design(
+        self, runner: CliRunner, register: str
+    ) -> None:
+        run(runner, register, "demo", "seed")
+        result = run(runner, register, "batch", "print", "881204")
+        assert "cement content" in result.output
+
+    def test_an_unknown_ticket(self, runner: CliRunner, register: str) -> None:
+        run(runner, register, "demo", "seed")
+        assert run(runner, register, "batch", "print", "999999").exit_code != 0

@@ -101,13 +101,26 @@ def _cell(value: object) -> str:
     return str(value)
 
 
-def render_pairs(pairs: Iterable[tuple[str, object]], *, separator: str = ": ") -> str:
-    """Lay out label and value pairs with the labels padded to a common width."""
+def render_pairs(
+    pairs: Iterable[tuple[str, object]],
+    *,
+    separator: str = ": ",
+    width: int | None = None,
+) -> str:
+    """Lay out label and value pairs with the labels padded to a common width.
+
+    ``width`` sets a floor rather than a cap. Left to itself the block is as
+    narrow as its longest label, which is right on screen and wrong on a
+    printed form, where a column that moves between tickets is hard to read at
+    arm's length.
+    """
     items = [(label, _cell(value)) for label, value in pairs]
     if not items:
         return ""
-    width = max(len(label) for label, _ in items)
-    return "\n".join(f"{label.ljust(width)}{separator}{value}" for label, value in items)
+    padding = max(len(label) for label, _ in items)
+    if width is not None:
+        padding = max(padding, width)
+    return "\n".join(f"{label.ljust(padding)}{separator}{value}" for label, value in items)
 
 
 def heading(text: str, *, underline: str = "=") -> str:
