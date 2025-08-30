@@ -28,6 +28,7 @@ from slumpcone.cli.common import (
     CliContext,
 )
 from slumpcone.cli.completion import attach
+from slumpcone.cli.config_cmds import config_group
 from slumpcone.cli.control_cmds import control_group
 from slumpcone.cli.crew_cmds import crew_group
 from slumpcone.cli.delivery_cmds import delivery_group
@@ -51,6 +52,22 @@ from slumpcone.cli.project_cmds import project_group
 from slumpcone.cli.reclaim_cmds import reclaim_group
 from slumpcone.cli.register_cmds import register_group
 from slumpcone.cli.report_cmds import report_group
+from slumpcone.config import Settings, load_settings
+from slumpcone.errors import SlumpconeError
+
+
+def _settings() -> Settings:
+    """The settings file, or the defaults when it is missing or unreadable.
+
+    A settings file that cannot be parsed must not stop somebody reading a
+    report. It is a convenience, it is not the register, and the commands all
+    work without one. So a broken file degrades to the defaults and the next
+    ``config show`` says why.
+    """
+    try:
+        return load_settings()
+    except SlumpconeError:
+        return Settings()
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -77,11 +94,30 @@ def cli(
     actor: str | None,
 ) -> None:
     """Ready-mix concrete production, quality control and delivery compliance."""
-    chosen = register_path or os.environ.get(REGISTER_ENV) or DEFAULT_REGISTER
-    who = actor or os.environ.get(ACTOR_ENV) or UNATTRIBUTED
-    ctx.obj = CliContext(Path(chosen), quiet=quiet, actor=who.strip() or UNATTRIBUTED)
+    settings = _settings()
+    chosen = (
+        register_path
+        or os.environ.get(REGISTER_ENV)
+        or settings.register_path
+        or DEFAULT_REGISTER
+    )
+    who = actor or os.environ.get(ACTOR_ENV) or settings.actor or UNATTRIBUTED
+    ctx.obj = CliContext(
+        Path(chosen),
+        quiet=quiet,
+        actor=who.strip() or UNATTRIBUTED,
+        settings=settings,
+    )
+    # Said once, on stderr, so it cannot get into a report somebody is piping.
+    if not settings.is_clean and not quiet:
+        named = ", ".join(settings.unknown_keys)
+        click.echo(
+            f"warning: {settings.source} carries keys this build does not know: {named}",
+            err=True,
+        )
 
 
+cli.add_command(config_group)
 cli.add_command(register_group)
 cli.add_command(material_group)
 cli.add_command(plant_group)

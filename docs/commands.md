@@ -5,6 +5,7 @@ change the docstring on the command.
 
 ## Groups
 
+- **`config`** Read and write the settings file.
 - **`register`** Create and inspect the register file.
 - **`material`** File materials and their certificates.
 - **`plant`** File plants, scales and vessels.
@@ -34,6 +35,49 @@ change the docstring on the command.
 - **`reclaim`** Wash water tanks and loads that came back.
 - **`probe`** Moisture probes and the checks that keep them honest.
 - **`demo`** Fill a register with a worked example.
+
+## `config`
+
+Read and write the settings file.
+
+### `config show`
+
+What the settings file says, and where the values actually came from.
+
+```
+slumpcone config show
+```
+
+### `config path`
+
+Where the settings file was found, if anywhere.
+
+```
+slumpcone config path
+```
+
+### `config init`
+
+Write a starter settings file.
+
+```
+slumpcone config init [options]
+```
+
+| option | value | what it does | default |
+| --- | --- | --- | --- |
+| `--out` |  | Where to write it. | `slumpcone.toml` |
+| `--force` |  | Write over one that is already there. |  |
+| `--plant` |  |  |  |
+| `--actor` |  |  |  |
+
+### `config check`
+
+Read a settings file and say whether this build understands all of it.
+
+```
+slumpcone config check <path>
+```
 
 ## `register`
 

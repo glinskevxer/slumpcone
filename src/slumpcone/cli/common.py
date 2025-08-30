@@ -14,7 +14,7 @@ the bottom.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from functools import wraps
 from pathlib import Path
@@ -22,6 +22,7 @@ from typing import Any, TypeVar
 
 import click
 
+from slumpcone.config import Settings
 from slumpcone.errors import ExitCode, SlumpconeError, exit_code_for
 from slumpcone.register import Register
 
@@ -44,6 +45,7 @@ class CliContext:
     path: Path
     quiet: bool = False
     actor: str = UNATTRIBUTED
+    settings: Settings = field(default_factory=Settings)
 
     def register(self) -> Register:
         """Open the register, creating and migrating it if it is not there."""
