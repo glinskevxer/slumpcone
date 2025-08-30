@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from slumpcone.cli.common import CliContext, handle_errors
-from slumpcone.cli.output import listing
+from slumpcone.cli.output import listing, page
 from slumpcone.store.maintenance import (
     back_up,
     backups_in,
@@ -20,6 +20,7 @@ from slumpcone.store.maintenance import (
 )
 from slumpcone.store.timing import run_all, unclean
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
+from slumpcone.versions import collect
 
 
 @click.group("register")
@@ -256,3 +257,20 @@ def reference_command(context: CliContext, path: str | None) -> None:
         return
     Path(path).write_text(text, encoding="utf-8")
     click.echo(f"wrote {path}: {groups} group(s), {leaves} command(s)")
+
+
+@register_group.command("versions")
+@click.option("--one-line", is_flag=True, help="Print one line, for a log.")
+@click.pass_obj
+@handle_errors
+def versions_command(context: CliContext, one_line: bool) -> None:
+    """Everything worth pasting into a bug report."""
+    found = collect(context.path)
+    if one_line:
+        click.echo(found.describe())
+        return
+    page("Versions", found.as_pairs())
+    if found.register_is_current is False:
+        raise click.ClickException(
+            "the register and this build are not at the same schema version"
+        )

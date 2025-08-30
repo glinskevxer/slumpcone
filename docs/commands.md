@@ -201,6 +201,18 @@ slumpcone register reference [options]
 | --- | --- | --- | --- |
 | `--out` |  | Write to a file instead of the screen. |  |
 
+### `register versions`
+
+Everything worth pasting into a bug report.
+
+```
+slumpcone register versions [options]
+```
+
+| option | value | what it does | default |
+| --- | --- | --- | --- |
+| `--one-line` |  | Print one line, for a log. |  |
+
 ## `material`
 
 File materials and their certificates.
