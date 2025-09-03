@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import click
 
-from slumpcone.cli.common import CliContext, handle_errors
+from slumpcone.cli.common import CliContext, day_option, handle_errors
 from slumpcone.cli.output import listing, page
+from slumpcone.doctor import Level, examine
 from slumpcone.store.maintenance import (
     back_up,
     backups_in,
@@ -273,4 +275,31 @@ def versions_command(context: CliContext, one_line: bool) -> None:
     if found.register_is_current is False:
         raise click.ClickException(
             "the register and this build are not at the same schema version"
+        )
+
+
+@register_group.command("doctor")
+@day_option("--on")
+@click.option("--all", "show_all", is_flag=True, help="Show notes as well.")
+@click.pass_obj
+@handle_errors
+def doctor_command(context: CliContext, on: date, show_all: bool) -> None:
+    """Run every check there is and say what stops the plant working.
+
+    Nothing here has an opinion of its own. Every finding comes from a rule that
+    already refuses work somewhere else, so this and the command that refused
+    cannot disagree.
+    """
+    with context.register() as register:
+        report = examine(register, on)
+    click.echo(heading(f"Doctor, {on.isoformat()}"))
+    click.echo(report.describe())
+    shown = [one for one in report.findings if show_all or one.level is not Level.NOTE]
+    if shown:
+        click.echo("")
+        for one in shown:
+            click.echo(f"  {one.describe()}")
+    if not report.is_well:
+        raise click.ClickException(
+            f"{len(report.failures)} failure(s) stop work until they are dealt with"
         )

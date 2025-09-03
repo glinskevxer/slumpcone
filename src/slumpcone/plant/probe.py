@@ -66,8 +66,14 @@ class ProbeStanding(Enum):
 
     @property
     def may_batch(self) -> bool:
-        """Only a probe in good standing may correct a batch."""
-        return self is ProbeStanding.GOOD
+        """Whether a plant may still correct a batch off this probe.
+
+        Due counts. A probe whose check is booked for next week has not become
+        unreliable overnight, and refusing it would mean a plant stops batching
+        because a technician is on holiday. What refuses is overdue, which is a
+        check that did not happen, and failed, which is a check that did.
+        """
+        return self in {ProbeStanding.GOOD, ProbeStanding.DUE}
 
     @property
     def needs_attention(self) -> bool:

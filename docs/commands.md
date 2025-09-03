@@ -213,6 +213,23 @@ slumpcone register versions [options]
 | --- | --- | --- | --- |
 | `--one-line` |  | Print one line, for a log. |  |
 
+### `register doctor`
+
+Run every check there is and say what stops the plant working.
+
+Nothing here has an opinion of its own. Every finding comes from a rule that
+    already refuses work somewhere else, so this and the command that refused
+    cannot disagree.
+
+```
+slumpcone register doctor [options]
+```
+
+| option | value | what it does | default |
+| --- | --- | --- | --- |
+| `--on` | YYYY-MM-DD | The date to judge against. |  |
+| `--all` |  | Show notes as well. |  |
+
 ## `material`
 
 File materials and their certificates.

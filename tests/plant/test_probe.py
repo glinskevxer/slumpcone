@@ -160,7 +160,16 @@ class CaseStanding:
     def test_a_probe_near_the_end_of_its_window_is_due(self) -> None:
         history = ProbeHistory("MP-1", (check(days_ago=27),))
         assert history.standing(TODAY) is ProbeStanding.DUE
-        assert not history.standing(TODAY).may_batch
+
+    def test_a_probe_due_for_a_check_may_still_batch(self) -> None:
+        # Booked is not broken. Refusing here would stop a plant because a
+        # technician is on holiday.
+        history = ProbeHistory("MP-1", (check(days_ago=27),))
+        assert history.standing(TODAY).may_batch
+
+    def test_overdue_and_failed_may_not(self) -> None:
+        assert not ProbeStanding.OVERDUE.may_batch
+        assert not ProbeStanding.FAILED.may_batch
 
     def test_a_probe_past_its_window_is_overdue(self) -> None:
         history = ProbeHistory("MP-1", (check(days_ago=45),))
@@ -215,10 +224,9 @@ class CaseCorrecting:
         with pytest.raises(ProbeError):
             ProbeHistory("MP-1", ()).corrected(Percent(5.0), TODAY)
 
-    def test_a_probe_due_for_a_check_refuses_too(self) -> None:
-        history = ProbeHistory("MP-1", (check(days_ago=27),))
-        with pytest.raises(ProbeError):
-            history.corrected(Percent(5.0), TODAY)
+    def test_a_probe_due_for_a_check_still_corrects(self) -> None:
+        history = ProbeHistory("MP-1", (check(probe=4.5, oven=4.3, days_ago=27),))
+        assert history.corrected(Percent(5.0), TODAY).value == pytest.approx(4.8)
 
     def test_the_refusal_names_the_standing(self) -> None:
         history = ProbeHistory("MP-1", (check(days_ago=45),))
