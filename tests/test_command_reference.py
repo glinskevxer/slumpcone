@@ -7,6 +7,7 @@ from slumpcone.cli.main import cli
 from slumpcone.tools.command_reference import (
     CommandPage,
     OptionLine,
+    _split_help,
     command_count,
     render_reference,
     walk,
@@ -146,3 +147,59 @@ class CaseTheRealCommandLine:
     @pytest.mark.parametrize("name", ["batch", "carbon", "crew", "dispatch", "probe"])
     def test_a_few_groups_by_name(self, name: str) -> None:
         assert f"## `{name}`" in render_reference(cli)
+
+
+class CaseItDoesNotDependOnThePythonVersion:
+    """The generated reference has to be byte identical on 3.12 and 3.13.
+
+    Python 3.13 dedents docstrings at compile time; 3.12 leaves the source
+    indentation on every line after the first. Click hands that difference
+    straight through as ``Command.help``, so a reference generated on one and
+    checked on the other differed by four spaces a line. CI caught it as 3.12
+    green and 3.13 red on the same commit.
+
+    These build both spellings by hand rather than needing two interpreters, so
+    the invariant is pinned wherever the suite runs.
+    """
+
+    def pages(self, body: str) -> tuple[str, str]:
+        @click.command("show")
+        def show() -> None:
+            pass
+
+        show.help = body
+        return _split_help(show)
+
+    # How 3.12 sees it: continuation lines keep the source indentation.
+    INDENTED = "Do the thing.\n\n    A second paragraph that\n    wraps onto two lines.\n"
+    # How 3.13 sees it: the compiler has already dedented.
+    DEDENTED = "Do the thing.\n\nA second paragraph that\nwraps onto two lines.\n"
+
+    def test_both_spellings_give_the_same_summary(self) -> None:
+        assert self.pages(self.INDENTED)[0] == self.pages(self.DEDENTED)[0]
+
+    def test_both_spellings_give_the_same_body(self) -> None:
+        assert self.pages(self.INDENTED)[1] == self.pages(self.DEDENTED)[1]
+
+    def test_the_body_carries_no_leading_indentation(self) -> None:
+        body = self.pages(self.INDENTED)[1]
+        assert body.splitlines()[0] == "A second paragraph that"
+        assert not any(line.startswith("    ") for line in body.splitlines())
+
+    def test_a_single_line_docstring_is_unaffected(self) -> None:
+        assert self.pages("Do the thing.")[0] == "Do the thing."
+        assert self.pages("Do the thing.")[1] == ""
+
+    def test_an_empty_docstring(self) -> None:
+        assert self.pages("") == ("", "")
+
+    def test_the_whole_reference_has_no_indented_prose(self) -> None:
+        # The reference is markdown; a four space indent there is a code block,
+        # which is what the stray indentation was silently producing.
+        text = render_reference(cli)
+        offenders = [
+            line
+            for line in text.splitlines()
+            if line.startswith("    ") and not line.strip().startswith(("|", "-", "*", "#"))
+        ]
+        assert offenders == [], offenders[:5]

@@ -178,8 +178,8 @@ slumpcone register vacuum [options]
 Check that the queries the reports run still use an index.
 
 Timings are printed and never judged. What is judged is whether SQLite
-    planned to read a table whole, which is a property of the schema rather
-    than of this machine, and which will still be true on the plant's.
+planned to read a table whole, which is a property of the schema rather
+than of this machine, and which will still be true on the plant's.
 
 ```
 slumpcone register plans [options]
@@ -218,8 +218,8 @@ slumpcone register versions [options]
 Run every check there is and say what stops the plant working.
 
 Nothing here has an opinion of its own. Every finding comes from a rule that
-    already refuses work somewhere else, so this and the command that refused
-    cannot disagree.
+already refuses work somewhere else, so this and the command that refused
+cannot disagree.
 
 ```
 slumpcone register doctor [options]
@@ -2238,9 +2238,9 @@ slumpcone dispatch haul <project_code> [options]
 Fit a haul profile from the deliveries already on file for a job.
 
 A ticket carries the job as the free text the dispatcher typed, not as the
-    project code, and the two are rarely the same string. So the label the
-    tickets actually carry is an option, and it defaults to the code for the
-    plants where somebody was disciplined about it.
+project code, and the two are rarely the same string. So the label the
+tickets actually carry is an option, and it defaults to the code for the
+plants where somebody was disciplined about it.
 
 ```
 slumpcone dispatch fit <project_code> [options]

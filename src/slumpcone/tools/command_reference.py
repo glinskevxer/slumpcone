@@ -19,6 +19,7 @@ order of operations.
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Iterator
 from dataclasses import dataclass
 
@@ -118,8 +119,19 @@ def _arguments_of(command: click.Command) -> tuple[str, ...]:
 
 
 def _split_help(command: click.Command) -> tuple[str, str]:
-    """A docstring as its first line and the rest."""
-    text = (command.help or "").strip()
+    """A docstring as its first line and the rest, normalised across versions.
+
+    ``inspect.cleandoc`` is doing real work here, not tidying. Python 3.13
+    dedents docstrings at compile time and 3.12 does not, so the same command
+    yields help text with four extra spaces on every continuation line under
+    3.12. Generating the reference on one and checking it on the other then
+    fails on whitespace, which is what CI caught: 3.12 green, 3.13 red, on a
+    file neither version disagreed about the meaning of.
+
+    Cleandoc removes the common indentation from the lines after the first,
+    which is a no-op on 3.13 and the fix on 3.12, so both converge.
+    """
+    text = inspect.cleandoc(command.help or "")
     if not text:
         return ("", "")
     head, _, tail = text.partition("\n")
