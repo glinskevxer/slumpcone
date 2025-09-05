@@ -96,32 +96,12 @@ jobs:
       # package forgot to ship fails here rather than in a plant's hands.
       - run: python -m venv /tmp/smoke
       - run: /tmp/smoke/bin/pip install dist/*.whl
+      # The sequence itself lives in slumpcone.tools.smoke, not in this file.
+      # It was shell here for the whole build, which meant nothing could test
+      # it, and it carried two commands that do not exist. Now the same tuple
+      # the test suite drives is the one CI runs.
       - name: drive it end to end
         run: |
           set -eux
           cd /tmp
-          /tmp/smoke/bin/slumpcone --version
-          /tmp/smoke/bin/python -c "from slumpcone.ingest import profiles; print(len(profiles.BUILT_IN))"
-          /tmp/smoke/bin/slumpcone register init
-          /tmp/smoke/bin/slumpcone demo seed
-          /tmp/smoke/bin/slumpcone register info
-          /tmp/smoke/bin/slumpcone register verify
-          /tmp/smoke/bin/slumpcone register plans
-          /tmp/smoke/bin/slumpcone mix check 4000P-57
-          /tmp/smoke/bin/slumpcone batch audit --from 2024-06-12 --to 2024-06-12
-          /tmp/smoke/bin/slumpcone lab strength --mix 4000P-57
-          /tmp/smoke/bin/slumpcone report production --from 2024-06-12 --to 2024-06-12
-          /tmp/smoke/bin/slumpcone report compliance --on 2024-06-12
-          /tmp/smoke/bin/slumpcone report day --on 2024-06-12
-          /tmp/smoke/bin/slumpcone carbon mix 4000P-57
-          /tmp/smoke/bin/slumpcone crew gaps --on 2024-06-12
-          /tmp/smoke/bin/slumpcone probe list --plant PL-1 --on 2024-06-12
-          /tmp/smoke/bin/slumpcone reclaim yard --on 2024-06-12
-          /tmp/smoke/bin/slumpcone audit verify
-      - name: an exit code a script can branch on
-        run: |
-          set -eu
-          cd /tmp
-          set +e
-          /tmp/smoke/bin/slumpcone mix show NOPE
-          test $? -eq 3
+          /tmp/smoke/bin/python -m slumpcone.tools.smoke /tmp/smoke/bin/slumpcone
