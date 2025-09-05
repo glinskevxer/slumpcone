@@ -149,14 +149,34 @@ cli.add_command(probe_group)
 cli.add_command(demo_group)
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Run the command line and return an exit status."""
-    return cli.main(args=argv, standalone_mode=False, prog_name="slumpcone")  # type: ignore[no-any-return]
-
-
-if __name__ == "__main__":
-    sys.exit(cli())
-
 # Give every mix, plant, material, account, technician and truck argument its
 # completer in one pass, rather than at a hundred and seventy call sites.
 attach(cli)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the command line and return an exit status.
+
+    Click is run with ``standalone_mode`` off so that the caller decides what
+    to do with the result, which is what makes the whole command line testable
+    in process. The cost is that click then raises where it would have exited,
+    and every one of those exceptions carries the code the shell was supposed
+    to see. Losing them is how a usage error came back as one instead of two,
+    which is the one code a script actually branches on.
+    """
+    try:
+        cli.main(args=argv, standalone_mode=False, prog_name="slumpcone")
+    except click.exceptions.Exit as exc:
+        # --help and --version both come through here, having already printed.
+        return int(exc.exit_code)
+    except click.ClickException as exc:
+        exc.show()
+        return exc.exit_code
+    except click.exceptions.Abort:
+        click.echo("Aborted.", err=True)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - exercised through __main__.py
+    sys.exit(main())

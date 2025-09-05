@@ -2,6 +2,47 @@
 
 Dates are the day the work landed on `main`.
 
+## 1.0.0 — 2025-09-05
+
+The version number is the only thing that changed in the concrete. Everything
+in 0.9.0 is here unchanged; what this release says is that the interfaces are
+now ones a plant can build a script against and expect to keep working.
+
+### Added
+
+- `register doctor`, which runs every check the package has and sorts what it
+  finds into what stops work, what will stop work, and what is only worth
+  knowing. It has no rules of its own: every finding comes from a rule that
+  already refuses work somewhere else, so the two cannot disagree.
+- `register versions`, for the message somebody pastes into a bug report. It
+  prints the schema version of the register on this machine next to the one
+  this build ships, which is the pair that explains most confusing failures.
+- `python -m slumpcone`, for the machines where the console script is not on
+  the path.
+- A `py.typed` marker, so a project depending on this gets the types.
+
+### Fixed
+
+- **A usage error exited 1 rather than 2 through the console script.** Click is
+  run with standalone mode off so the command line is testable in process,
+  which makes click raise where it would have exited. The exception carries the
+  code and it was being dropped. Two is the one code scripts branch on.
+- **A moisture probe merely due for a check refused to correct a reading.**
+  Booked is not broken, and refusing there stops a plant batching because a
+  technician is on holiday. Overdue and failed still refuse. Found by writing
+  `register doctor` and disagreeing with the answer it gave.
+- **`--help` through the console script raised instead of printing.** Same root
+  cause as the exit code: click signals "printed and stopped" by raising when
+  standalone mode is off, and that was landing as a traceback.
+- The wheel was not carrying the schema scripts or the typing marker, because
+  neither is a `.py` file. Both are declared now, and the smoke job installs
+  from the wheel and drives the whole command line.
+
+### Compatibility
+
+The register schema is at 27 migrations. A register written by 0.9.0 opens and
+migrates forward. Nothing is removed and no command changed its output shape.
+
 ## Unreleased
 
 Nothing yet.

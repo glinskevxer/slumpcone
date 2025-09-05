@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "slumpcone"
-version = "0.9.0"
+version = "1.0.0"
 description = "Ready-mix concrete production, quality control and delivery compliance"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -24,6 +24,10 @@ slumpcone = "slumpcone.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/slumpcone"]
+# The schema scripts and the typing marker are not .py files and would be left
+# out of the wheel otherwise. The smoke job installs from the wheel and drives
+# the whole command line, which is where a missing migration would show.
+artifacts = ["src/slumpcone/store/schema/*.sql", "src/slumpcone/py.typed"]
 
 [tool.ruff]
 line-length = 96

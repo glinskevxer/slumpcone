@@ -144,3 +144,46 @@ def test_a_few_commands_end_to_end(
 ) -> None:
     run(runner, register, "register", "init")
     assert run(runner, register, *args).exit_code == expected
+
+
+class CaseThroughTheConsoleScript:
+    """The codes as a shell sees them, not as CliRunner reports them.
+
+    CliRunner drives the group directly and never goes through ``main``, which
+    is where the codes were being lost. These call ``main`` the way the console
+    script does.
+    """
+
+    def test_success(self, tmp_path: object) -> None:
+        from slumpcone.cli.main import main
+
+        assert main(["--register", str(tmp_path) + "/r.sqlite3", "register", "init"]) == 0
+
+    def test_a_usage_error_is_two(self) -> None:
+        from slumpcone.cli.main import main
+
+        assert main(["levitate"]) == int(ExitCode.USAGE)
+
+    def test_a_missing_argument_is_two(self) -> None:
+        from slumpcone.cli.main import main
+
+        assert main(["mix", "show"]) == int(ExitCode.USAGE)
+
+    def test_a_record_that_is_not_there_is_three(self, tmp_path: object) -> None:
+        from slumpcone.cli.main import main
+
+        path = str(tmp_path) + "/r.sqlite3"
+        main(["--register", path, "register", "init"])
+        assert main(["--register", path, "mix", "show", "NOPE"]) == int(ExitCode.NOT_FOUND)
+
+    def test_help_exits_clean(self) -> None:
+        # --help prints and stops, which click signals by raising rather than
+        # returning when standalone mode is off. It has to come back as zero.
+        from slumpcone.cli.main import main
+
+        assert main(["--help"]) == int(ExitCode.OK)
+
+    def test_version_exits_clean(self) -> None:
+        from slumpcone.cli.main import main
+
+        assert main(["--version"]) == int(ExitCode.OK)
