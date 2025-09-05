@@ -13,10 +13,18 @@ authors = [{ name = "glinskevxer" }]
 dependencies = ["click==8.1.3"]
 
 [project.optional-dependencies]
+# These are the versions check.sh runs and the versions CI installs. They are
+# pinned exactly, and tests/test_dev_pins.py asserts the running tool agrees
+# with the pin. Before that test existed this list was written once and never
+# updated, and nothing noticed for 180 commits: check.sh calls the tools out of
+# the virtualenv directly and never installs this extra, so CI was the first
+# thing that ever read it.
 dev = [
-  "pytest==8.0.0",
-  "ruff==0.2.1",
-  "mypy==1.8.0",
+  "pytest==8.3.4",
+  "pytest-cov==6.0.0",
+  "coverage==7.6.12",
+  "ruff==0.9.6",
+  "mypy==1.15.0",
 ]
 
 [project.scripts]

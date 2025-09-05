@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from slumpcone.batching.ticket import BatchTicket
 from slumpcone.percent import Percent
 from slumpcone.textout import Align, Column, heading, render_pairs, render_table
+from slumpcone.units.quantity import Quantity
 
 
 def render_ticket(ticket: BatchTicket) -> str:
@@ -122,7 +123,9 @@ def audit_summary(tickets: Sequence[BatchTicket]) -> str:
     """The counts under an audit table."""
     total = len(tickets)
     with_findings = sum(1 for ticket in tickets if ticket_findings(ticket))
-    volume = None
+    # Annotated rather than inferred. Without it the initial None narrows the
+    # name to None and the addition below is an error, which is what CI caught.
+    volume: Quantity | None = None
     for ticket in tickets:
         volume = ticket.volume if volume is None else volume + ticket.volume
     share = Percent.from_fraction((total - with_findings) / total) if total else Percent(0.0)
